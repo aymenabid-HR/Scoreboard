@@ -291,3 +291,5 @@ Built with:
 **Ready to track your candidates more effectively!** 🚀
 
 For setup instructions, see [SETUP_GUIDE.md](SETUP_GUIDE.md)
+#   S c o r e b o a r d  
+ 
