@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken } from '../lib/jwt';
-import '../types/express'; // apply global Request augmentation
 
 // AuthRequest is kept for backward compatibility — userId is now on base Request
+// Global Request augmentation is in src/types/express.d.ts (no import needed)
 export type AuthRequest = Request;
 
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
