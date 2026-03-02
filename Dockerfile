@@ -39,5 +39,6 @@ COPY DEMO.html ./DEMO.html
 
 EXPOSE 3001
 
-# Run DB migrations then start server
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+# Run DB migrations (non-blocking — server starts even if migrate has issues)
+# then start the Express server. Railway injects PORT automatically.
+CMD ["sh", "-c", "npx prisma migrate deploy; node dist/index.js"]
