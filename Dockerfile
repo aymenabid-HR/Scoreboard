@@ -1,0 +1,43 @@
+# ── Stage 1: Build ────────────────────────────────────────────────────────────
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Install dependencies first (cached layer)
+COPY backend/package*.json ./
+RUN npm ci
+
+# Copy Node.js backend source + Prisma schema
+COPY backend/src ./src
+COPY backend/tsconfig.json ./tsconfig.json
+COPY backend/prisma ./prisma
+
+# Copy DEMO.html (frontend) into build context
+COPY DEMO.html ./DEMO.html
+
+# Generate Prisma client + compile TypeScript
+RUN npx prisma generate
+RUN npm run build
+
+# ── Stage 2: Run ──────────────────────────────────────────────────────────────
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+
+# Production dependencies only
+COPY backend/package*.json ./
+RUN npm ci --omit=dev
+
+# Copy compiled output from builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+
+# Prisma schema (needed for migrate deploy)
+COPY backend/prisma ./prisma
+
+# Frontend served by Express at GET /
+COPY DEMO.html ./DEMO.html
+
+EXPOSE 3001
+
+# Run DB migrations then start server
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]

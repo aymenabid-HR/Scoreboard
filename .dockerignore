@@ -1,0 +1,47 @@
+# Git
+.git
+.gitignore
+
+# Node
+backend/node_modules
+backend/dist
+frontend/node_modules
+frontend/dist
+frontend/build
+
+# Python / Django
+backend/venv
+backend/__pycache__
+backend/apps
+backend/config
+backend/manage.py
+backend/requirements.txt
+backend/*.log
+backend/media
+backend/scoreboard.db
+server.py
+scoreboard.db
+*.pyc
+*.pyo
+
+# Logs
+*.log
+server_test.log
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+.claude
+
+# Misc HTML files at root (only DEMO.html is needed)
+DEMO_FRESH.html
+TEST.html
+RECOVER_DATA.html
+CLICK_HERE_TO_DEPLOY.html
+
+# Env files (secrets must come from Railway env vars, not files)
+.env
+backend/.env
+frontend/.env

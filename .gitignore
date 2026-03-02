@@ -2,6 +2,21 @@
 node_modules/
 dist/
 *.log
+server.log
+server_test.log
+dev.log
+dev2.log
+
+# SQLite databases
+*.db
+scoreboard.db
+
+# Python virtualenv
+venv/
+backend/venv/
+
+# Claude internal
+.claude/
 
 # Environment — NEVER commit secrets
 backend/.env
