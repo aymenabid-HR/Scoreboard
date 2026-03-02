@@ -20,8 +20,7 @@ export function requireRole(minRole: WorkspaceRole) {
   return async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     // workspaceId can come from route params directly or via nested resource
     const workspaceId =
-      req.params.workspaceId ??
-      (req as Record<string, unknown>).resolvedWorkspaceId as string | undefined;
+      req.params.workspaceId ?? req.resolvedWorkspaceId;
 
     if (!workspaceId) {
       res.status(400).json({ error: 'workspaceId is required' });

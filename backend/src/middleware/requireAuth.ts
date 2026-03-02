@@ -1,10 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken } from '../lib/jwt';
+import '../types/express'; // apply global Request augmentation
 
-export interface AuthRequest extends Request {
-  userId: string;
-  memberRole?: string;
-}
+// AuthRequest is kept for backward compatibility — userId is now on base Request
+export type AuthRequest = Request;
 
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;

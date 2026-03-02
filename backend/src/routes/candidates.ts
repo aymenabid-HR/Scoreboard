@@ -27,7 +27,7 @@ async function resolveWorkspaceId(positionId: string): Promise<string | null> {
 router.use(async (req: AuthRequest, res: Response, next) => {
   const workspaceId = await resolveWorkspaceId(req.params.positionId);
   if (!workspaceId) { res.status(404).json({ error: 'Position not found' }); return; }
-  (req as Record<string, unknown>).resolvedWorkspaceId = workspaceId;
+  req.resolvedWorkspaceId = workspaceId;
   req.params.workspaceId = workspaceId;
   next();
 });
