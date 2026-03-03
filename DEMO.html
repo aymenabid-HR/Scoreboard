@@ -2766,11 +2766,19 @@
                         customStatuses: (p.customStatuses || []).map(s => ({
                             id: s.id, name: s.name, colorClass: s.colorClass,
                         })),
-                        candidates: candidates.map(c => ({
-                            id: c.id, _apiId: c.id,
-                            data: c.data || {},
-                            _files: c.files || [],
-                        })),
+                        candidates: candidates.map(c => {
+                            const data = c.data || {};
+                            // Restore file column values from the returned files array.
+                            // The file cell renderer expects data[columnName] = { name, type, size, _fileId }.
+                            const columnMap = Object.fromEntries((p.columns || []).map(col => [col.id, col.name]));
+                            for (const f of (c.files || [])) {
+                                const colName = columnMap[f.columnId];
+                                if (colName) {
+                                    data[colName] = { name: f.originalName, type: f.mimeType, size: f.sizeBytes, _fileId: f.id };
+                                }
+                            }
+                            return { id: c.id, _apiId: c.id, data, _files: c.files || [] };
+                        }),
                         nextCandidateId: 1,
                         nextColumnId: 1,
                     };
