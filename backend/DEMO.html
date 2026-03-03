@@ -2837,6 +2837,10 @@
                 const mapWs = arr => arr.map(w => ({
                     id: w.id, _apiId: w.id, name: w.name, description: w.description,
                     icon: w.icon || '📋', color: w.color, positions: [], nextPositionId: 1, createdAt: w.createdAt,
+                    // Seed counts from the server's _count so non-current workspaces
+                    // show accurate numbers even before their positions are fully loaded.
+                    positionCount:  w._count?.positions  ?? 0,
+                    candidateCount: 0,
                 }));
 
                 workspaces = mapWs(apiWorkspaces);
@@ -2874,8 +2878,9 @@
                 } else {
                     currentWorkspaceId = workspaces[0]?.id || null;
                 }
-                renderWorkspaceList();
+                // Load positions first so the sidebar shows correct counts on first render
                 await loadPositionsFromAPI();
+                _refreshSidebarCounts();
                 renderAll();
             } catch (err) {
                 console.error('[loadFromAPI]', err);
@@ -2955,15 +2960,28 @@
             return workspaces.find(w => w.id === currentWorkspaceId);
         }
 
+        // Re-compute position + candidate counts for the current workspace
+        // and re-render the sidebar list.  Call this after any mutation that
+        // changes positions or candidates.
+        function _refreshSidebarCounts() {
+            const ws = getCurrentWorkspace();
+            if (ws) {
+                ws.positionCount  = positions.length;
+                ws.candidateCount = positions.reduce((s, p) => s + (p.candidates?.length || 0), 0);
+            }
+            renderWorkspaceList();
+        }
+
         // Switch workspace
         async function switchWorkspace(workspaceId) {
             currentWorkspaceId = workspaceId;
-            renderWorkspaceList();
             if (isAuthenticated()) {
                 await loadPositionsFromAPI();
             } else {
                 positions = [];
             }
+            // Refresh sidebar AFTER positions are loaded so counts are accurate
+            _refreshSidebarCounts();
             renderAll();
         }
 
@@ -2974,8 +2992,10 @@
 
             container.innerHTML = workspaces.map(workspace => {
                 const isActive = workspace.id === currentWorkspaceId;
-                const positionCount = workspace.positions?.length || 0;
-                const candidateCount = workspace.positions?.reduce((sum, p) => sum + (p.candidates?.length || 0), 0) || 0;
+                // Use the live counts kept up-to-date by _refreshSidebarCounts(),
+                // seeded from the API's _count for non-current workspaces.
+                const positionCount  = workspace.positionCount  ?? workspace.positions?.length ?? 0;
+                const candidateCount = workspace.candidateCount ?? workspace.positions?.reduce((sum, p) => sum + (p.candidates?.length || 0), 0) ?? 0;
 
                 return `
                     <div class="workspace-item ${isActive ? 'active' : ''}" onclick="switchWorkspace('${workspace.id}')">
@@ -3354,12 +3374,16 @@
                         <p>No positions yet. Click "Add New Position" to get started!</p>
                     </div>
                 `;
+                _refreshSidebarCounts();
                 return;
             }
 
             positions.forEach(position => {
                 container.appendChild(createPositionGroup(position));
             });
+
+            // Keep sidebar counts in sync after every render (create / delete / add candidate etc.)
+            _refreshSidebarCounts();
         }
 
         function createPositionGroup(position) {
