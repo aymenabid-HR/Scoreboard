@@ -2140,7 +2140,7 @@
             margin-left: 3px; line-height: 1;
         }
         #tbPanel {
-            position: absolute; z-index: 300;
+            position: fixed; z-index: 9999;
             background: #fff; border: 1px solid var(--border);
             border-radius: 10px; box-shadow: var(--shadow-lg);
             min-width: 280px; max-width: 340px;
@@ -2308,7 +2308,7 @@
         </div>
 
         <!-- Board Toolbar -->
-        <div class="board-toolbar" style="position:relative;">
+        <div class="board-toolbar">
             <button class="btn btn-primary btn-sm" onclick="showModal('newPositionModal')">
                 + New Position
             </button>
@@ -2330,7 +2330,6 @@
                 ⊞ Group by status
             </button>
         </div>
-        <div id="tbPanel" style="display:none;"></div>
 
         <!-- Main Table View -->
         <div id="tableView" class="view-container active">
@@ -3485,18 +3484,23 @@
                 _closeTbPanel(); return;
             }
             _activeTbPanel = name;
-            // Position panel below the clicked button
-            const rect = btn.getBoundingClientRect();
-            const toolbarRect = btn.closest('.board-toolbar').getBoundingClientRect();
-            panel.style.top  = (rect.bottom - toolbarRect.top + 4) + 'px';
-            panel.style.left = Math.max(0, rect.left - toolbarRect.left) + 'px';
-            panel.style.display = 'block';
+            // Render content first so we know panel dimensions
             _renderPanelContent(name);
+            panel.style.display = 'block';
+            // Position panel below button using fixed (viewport) coordinates
+            const rect = btn.getBoundingClientRect();
+            const panelW = panel.offsetWidth || 280;
+            let left = rect.left;
+            // Keep panel within viewport
+            if (left + panelW > window.innerWidth - 8) left = window.innerWidth - panelW - 8;
+            if (left < 8) left = 8;
+            panel.style.top  = (rect.bottom + 4) + 'px';
+            panel.style.left = left + 'px';
             _updateBadges();
             // Mark button active
             document.querySelectorAll('.toolbar-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            // Close on outside click
+            // Close on outside click (defer so this click doesn't immediately close)
             setTimeout(() => {
                 document.addEventListener('click', _outsideTbClick, { once: true });
             }, 0);
@@ -5984,5 +5988,7 @@
             showAuthModal();
         })();
     </script>
+    <!-- Toolbar floating panel — at body level so fixed positioning is never clipped -->
+    <div id="tbPanel" style="display:none;"></div>
 </body>
 </html>
