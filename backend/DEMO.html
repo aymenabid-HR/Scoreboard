@@ -1994,7 +1994,7 @@
         <span>Data synced to cloud</span>
         <span id="lastSavedIndicator" style="opacity: 0.6; font-size: 11px;"></span>
         <div style="flex:1;"></div>
-        <button onclick="showModal('shareModal')">👥 Share</button>
+        <button onclick="openShareModal()">👥 Share</button>
         <button onclick="exportData()">📥 Export</button>
         <button onclick="document.getElementById('importFile').click()">📤 Import</button>
         <button onclick="clearLocalStorage()">🗑️ Clear</button>
@@ -2280,89 +2280,63 @@
 
     <!-- Share & Collaborate Modal -->
     <div id="shareModal" class="modal">
-        <div class="modal-content" style="max-width: 600px;">
-            <div class="modal-header">👥 Share & Collaborate</div>
+        <div class="modal-content" style="max-width: 600px; max-height: 88vh; overflow-y: auto;">
+            <div class="modal-header">👥 Share &amp; Collaborate</div>
 
-            <div style="margin-bottom: 24px; padding: 16px; background: #e6f7ff; border-left: 3px solid #1890ff; border-radius: 4px;">
-                <div style="font-weight: 600; margin-bottom: 8px; color: #1890ff;">🌐 Collaboration Features</div>
-                <ul style="margin-left: 20px; color: #0050b3; font-size: 13px; line-height: 1.8;">
-                    <li>Share board with view-only or edit access</li>
-                    <li>Real-time sync across all devices</li>
-                    <li>Automatic conflict resolution</li>
-                    <li>Track who made changes (coming soon)</li>
-                </ul>
-            </div>
-
-            <div class="form-group">
-                <label style="font-weight: 600; margin-bottom: 12px; display: block;">Choose Access Level</label>
-                <div style="display: flex; gap: 12px; margin-bottom: 20px;">
-                    <label style="flex: 1; display: flex; align-items: center; gap: 8px; padding: 16px; border: 2px solid #d9d9d9; border-radius: 8px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#1890ff'" onmouseout="if(!document.getElementById('accessEdit').checked) this.style.borderColor='#d9d9d9'">
-                        <input type="radio" id="accessEdit" name="accessLevel" value="edit" checked style="width: 18px; height: 18px;">
-                        <div>
-                            <div style="font-weight: 600; color: #333;">✏️ Can Edit</div>
-                            <div style="font-size: 12px; color: #999;">Full access to add/edit/delete</div>
-                        </div>
-                    </label>
-                    <label style="flex: 1; display: flex; align-items: center; gap: 8px; padding: 16px; border: 2px solid #d9d9d9; border-radius: 8px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#1890ff'" onmouseout="if(!document.getElementById('accessView').checked) this.style.borderColor='#d9d9d9'">
-                        <input type="radio" id="accessView" name="accessLevel" value="view" style="width: 18px; height: 18px;">
-                        <div>
-                            <div style="font-weight: 600; color: #333;">👁️ View Only</div>
-                            <div style="font-size: 12px; color: #999;">Can view but not modify</div>
-                        </div>
-                    </label>
+            <!-- ── Board Link ─────────────────────────────────────────── -->
+            <div style="margin-bottom: 22px;">
+                <div style="font-weight: 600; font-size: 13px; color: #333; margin-bottom: 6px;">🔗 Board Link</div>
+                <div style="font-size: 12px; color: #888; margin-bottom: 10px;">Share with anyone who already has access — they'll land on this workspace after login.</div>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="boardShareLinkInput" readonly
+                        style="flex: 1; padding: 9px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-family: monospace; font-size: 12px; background: #fafafa; color: #333; min-width: 0;">
+                    <button class="btn btn-primary" onclick="copyBoardLink()" style="white-space: nowrap; flex-shrink: 0;">📋 Copy</button>
                 </div>
             </div>
 
-            <div class="form-group" style="margin-bottom: 20px;">
-                <label style="font-weight: 600; margin-bottom: 8px; display: block;">Enable Cloud Sync</label>
-                <div style="display: flex; align-items: center; gap: 12px; padding: 16px; background: #f0f0f0; border-radius: 8px;">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1;">
-                        <input type="checkbox" id="enableCloudSync" style="width: 18px; height: 18px;">
-                        <span style="font-size: 14px;">☁️ Sync with cloud (Real-time collaboration)</span>
-                    </label>
-                </div>
-                <div style="font-size: 12px; color: #666; margin-top: 8px; padding-left: 4px;">
-                    When enabled, changes sync in real-time across all devices. Uses free cloud storage.
-                </div>
-            </div>
+            <hr style="border: none; border-top: 1px solid #f0f0f0; margin: 0 0 22px 0;">
 
-            <div id="shareLinksSection" style="display: none; margin-bottom: 20px;">
-                <div style="font-weight: 600; margin-bottom: 12px;">📎 Shareable Links</div>
-
-                <div style="margin-bottom: 16px;">
-                    <label style="font-size: 13px; color: #666; margin-bottom: 6px; display: block;">Share Link (Click to copy)</label>
+            <!-- ── Invite by Email ─────────────────────────────────────── -->
+            <div id="inviteSection" style="margin-bottom: 22px;">
+                <div style="font-weight: 600; font-size: 13px; color: #333; margin-bottom: 6px;">✉️ Invite by Email</div>
+                <div style="font-size: 12px; color: #888; margin-bottom: 10px;">Send an invitation link to give someone access to this workspace.</div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <input type="email" id="inviteEmailInput" placeholder="colleague@company.com"
+                        style="flex: 1; min-width: 180px; padding: 9px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 13px; outline: none;"
+                        onfocus="this.style.borderColor='#1890ff'" onblur="this.style.borderColor='#d9d9d9'"
+                        onkeydown="if(event.key==='Enter')sendWorkspaceInvite()">
+                    <select id="inviteRoleSelect"
+                        style="padding: 9px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 13px; background: white; cursor: pointer; outline: none;">
+                        <option value="collaborator">Can Edit</option>
+                        <option value="viewer">View Only</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="sendWorkspaceInvite()" id="sendInviteBtn" style="white-space: nowrap; flex-shrink: 0;">Send Invite</button>
+                </div>
+                <!-- Invite link result (shown when email not configured) -->
+                <div id="inviteLinkResult" style="display:none; margin-top: 12px; padding: 12px; background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 6px; font-size: 13px;">
+                    <div style="font-weight: 600; color: #389e0d; margin-bottom: 6px;">✅ Invite created!</div>
+                    <div style="color: #555; margin-bottom: 8px; font-size: 12px;">Share this link with the person you want to invite:</div>
                     <div style="display: flex; gap: 8px;">
-                        <input type="text" id="shareLink" readonly style="flex: 1; padding: 10px; border: 1px solid #d9d9d9; border-radius: 4px; background: #fafafa; font-size: 13px; font-family: monospace;">
-                        <button class="btn btn-primary" onclick="copyShareLink()" style="padding: 10px 16px;">
-                            📋 Copy
-                        </button>
+                        <input type="text" id="inviteLinkInput" readonly
+                            style="flex: 1; padding: 7px 10px; border: 1px solid #d9d9d9; border-radius: 4px; font-family: monospace; font-size: 11px; background: white; min-width: 0;">
+                        <button class="btn btn-secondary" onclick="copyInviteLink()" style="white-space: nowrap; font-size: 12px; flex-shrink: 0;">Copy</button>
                     </div>
                 </div>
+            </div>
 
-                <div style="padding: 12px; background: #fff7e6; border-left: 3px solid #faad14; border-radius: 4px; font-size: 13px; color: #ad6800;">
-                    <strong>⚠️ Important:</strong> Anyone with this link can access your board. Keep it secure!
+            <hr style="border: none; border-top: 1px solid #f0f0f0; margin: 0 0 22px 0;">
+
+            <!-- ── Members List ────────────────────────────────────────── -->
+            <div style="margin-bottom: 8px;">
+                <div style="font-weight: 600; font-size: 13px; color: #333; margin-bottom: 12px;">👥 Team Members</div>
+                <div id="membersList" style="min-height: 60px;">
+                    <div style="color: #999; text-align: center; padding: 20px; font-size: 13px;">Loading members…</div>
                 </div>
             </div>
 
-            <div id="cloudSyncInfo" style="display: none; margin-bottom: 20px; padding: 16px; background: #f6ffed; border-left: 3px solid #52c41a; border-radius: 4px;">
-                <div style="font-weight: 600; color: #52c41a; margin-bottom: 8px;">✅ Cloud Sync Enabled</div>
-                <div style="font-size: 13px; color: #389e0d; line-height: 1.6;">
-                    <div style="margin-bottom: 6px;">Board ID: <code id="cloudBoardId" style="background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 3px;"></code></div>
-                    <div>Status: <span id="cloudSyncStatusText">Connected</span></div>
-                </div>
-            </div>
-
-            <div id="activeCollaborators" style="display: none; margin-bottom: 20px;">
-                <div style="font-weight: 600; margin-bottom: 12px;">👥 Active Collaborators</div>
-                <div id="collaboratorsList" style="padding: 16px; background: #f0f0f0; border-radius: 8px; min-height: 60px;">
-                    <div style="color: #999; text-align: center;">No active collaborators</div>
-                </div>
-            </div>
-
-            <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="hideModal('shareModal')">Close</button>
-                <button class="btn btn-primary" id="generateShareLinkBtn" onclick="generateShareLink()">Generate Link</button>
-                <button class="btn btn-primary" id="stopSharingBtn" onclick="stopSharing()" style="display: none; background: #ff4d4f;">Stop Sharing</button>
+            <div class="modal-actions" style="margin-top: 16px;">
+                <button class="btn btn-secondary" onclick="hideModal('shareModal')">Done</button>
             </div>
         </div>
     </div>
@@ -2457,7 +2431,10 @@
         <div class="auth-box">
             <div class="auth-logo">📋</div>
             <div class="auth-title">Recruitment Scoreboard</div>
-            <div class="auth-subtitle">Sign in to access your workspace</div>
+            <div class="auth-subtitle" id="authSubtitle">Sign in to access your workspace</div>
+
+            <!-- Shown when user opens an invite link -->
+            <div id="inviteNotice" style="display:none; margin: 12px 0; padding: 12px 16px; background: #e6f7ff; border: 1px solid #91d5ff; border-radius: 8px; font-size: 13px; color: #003a8c; text-align: center; line-height: 1.5;"></div>
 
             <div class="auth-tabs">
                 <button class="auth-tab-btn active" data-tab="login" onclick="switchAuthTab('login')">Sign In</button>
@@ -2648,6 +2625,11 @@
                 localStorage.setItem('sb_user', JSON.stringify(data.user));
                 hideAuthModal();
                 updateUserDisplay();
+                // Accept any pending invite from URL before loading workspaces
+                if (pendingInviteToken) {
+                    const joinedWsId = await acceptPendingInvite();
+                    if (joinedWsId) pendingBoardId = joinedWsId; // switch to invited workspace
+                }
                 await loadFromAPI();
                 showNotification(`✅ Welcome back, ${data.user.name}!`);
             } catch (err) { errEl.textContent = err.message; }
@@ -2668,6 +2650,11 @@
                 localStorage.setItem('sb_user', JSON.stringify(data.user));
                 hideAuthModal();
                 updateUserDisplay();
+                // Accept any pending invite from URL before loading workspaces
+                if (pendingInviteToken) {
+                    const joinedWsId = await acceptPendingInvite();
+                    if (joinedWsId) pendingBoardId = joinedWsId;
+                }
                 await loadFromAPI();
                 showNotification(`✅ Account created! Welcome, ${data.user.name}!`);
             } catch (err) { errEl.textContent = err.message; }
@@ -2728,7 +2715,16 @@
                     createdAt: w.createdAt,
                 }));
 
-                currentWorkspaceId = workspaces[0]?.id || null;
+                // If a ?board=ID was in the URL, switch to that workspace
+                if (pendingBoardId && workspaces.find(w => w.id === pendingBoardId)) {
+                    currentWorkspaceId = pendingBoardId;
+                } else {
+                    if (pendingBoardId) {
+                        showNotification("⚠️ You don't have access to the shared workspace. Ask the owner to invite you.", 6000, 'warning');
+                    }
+                    currentWorkspaceId = workspaces[0]?.id || null;
+                }
+                pendingBoardId = null;
                 renderWorkspaceList();
                 await loadPositionsFromAPI();
                 renderAll();
@@ -4942,318 +4938,233 @@
 
 
         // ========================================
-        // COLLABORATION & SHARING FEATURES
+        // COLLABORATION & SHARING
         // ========================================
 
-        let cloudSyncEnabled = false;
-        let cloudBoardId = null;
-        let syncInterval = null;
-        let currentShareLink = null;
-        let accessLevel = 'edit';
+        let pendingInviteToken = null;  // ?invite=TOKEN from URL
+        let pendingBoardId = null;       // ?board=WORKSPACE_ID from URL
 
-        // Generate unique board ID
-        function generateBoardId() {
-            return 'board-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now();
+        // escapeHtml — used in member list rendering
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
 
-        // Generate shareable link
-        function generateShareLink() {
-            const enableSync = document.getElementById('enableCloudSync').checked;
-            const accessRadio = document.querySelector('input[name="accessLevel"]:checked');
-            accessLevel = accessRadio ? accessRadio.value : 'edit';
+        // Open the Share modal: populate board link and load member list
+        async function openShareModal() {
+            if (!currentWorkspaceId) {
+                showNotification('Select a workspace first', 3000, 'warning');
+                return;
+            }
+            // Set board link
+            const boardLink = `${window.location.origin}${window.location.pathname}?board=${currentWorkspaceId}`;
+            const linkInput = document.getElementById('boardShareLinkInput');
+            if (linkInput) linkInput.value = boardLink;
 
-            if (enableSync) {
-                // Cloud sync mode
-                if (!cloudBoardId) {
-                    cloudBoardId = generateBoardId();
+            // Reset invite form
+            const emailInput = document.getElementById('inviteEmailInput');
+            const resultDiv  = document.getElementById('inviteLinkResult');
+            if (emailInput) emailInput.value = '';
+            if (resultDiv)  resultDiv.style.display = 'none';
+
+            // Show invite section only for owner/admin
+            const myInfo = await _getMyMemberInfo();
+            const inviteSection = document.getElementById('inviteSection');
+            if (inviteSection) inviteSection.style.display = (myInfo && ['owner','admin'].includes(myInfo.role)) ? 'block' : 'none';
+
+            showModal('shareModal');
+            await loadWorkspaceMembers();
+        }
+
+        async function _getMyMemberInfo() {
+            try {
+                const members = await apiCall('GET', `/workspaces/${currentWorkspaceId}/members`);
+                return members ? members.find(m => m.userId === currentUser?.id) || null : null;
+            } catch { return null; }
+        }
+
+        function copyBoardLink() {
+            const input = document.getElementById('boardShareLinkInput');
+            if (!input) return;
+            input.select(); document.execCommand('copy');
+            showNotification('✅ Board link copied to clipboard!');
+        }
+
+        function copyInviteLink() {
+            const input = document.getElementById('inviteLinkInput');
+            if (!input) return;
+            input.select(); document.execCommand('copy');
+            showNotification('✅ Invite link copied!');
+        }
+
+        async function sendWorkspaceInvite() {
+            const email = document.getElementById('inviteEmailInput')?.value.trim();
+            const role  = document.getElementById('inviteRoleSelect')?.value;
+            if (!email) { showNotification('Please enter an email address', 3000, 'warning'); return; }
+            if (!currentWorkspaceId) return;
+
+            const btn = document.getElementById('sendInviteBtn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+
+            try {
+                const result = await apiCall('POST', `/workspaces/${currentWorkspaceId}/invite`, { email, role });
+                if (!result) return;
+
+                // Show the invite link (always, in case email was not delivered)
+                const resultDiv  = document.getElementById('inviteLinkResult');
+                const linkInput  = document.getElementById('inviteLinkInput');
+                if (resultDiv && linkInput && result.inviteLink) {
+                    linkInput.value = result.inviteLink;
+                    resultDiv.style.display = 'block';
+                }
+                showNotification(`✅ ${result.message}`);
+                if (document.getElementById('inviteEmailInput')) document.getElementById('inviteEmailInput').value = '';
+                await loadWorkspaceMembers();
+            } catch (err) {
+                showNotification(`❌ ${err.message}`, 5000, 'error');
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = 'Send Invite'; }
+            }
+        }
+
+        async function loadWorkspaceMembers() {
+            const container = document.getElementById('membersList');
+            if (!container || !currentWorkspaceId) return;
+            container.innerHTML = '<div style="color:#999;text-align:center;padding:20px;font-size:13px;">Loading…</div>';
+
+            try {
+                const members = await apiCall('GET', `/workspaces/${currentWorkspaceId}/members`);
+                if (!members) { container.innerHTML = '<div style="color:#999;padding:12px;font-size:13px;">Could not load members.</div>'; return; }
+
+                const myMember = members.find(m => m.userId === currentUser?.id);
+                const canManage = myMember && ['owner','admin'].includes(myMember.role);
+
+                const roleColors  = { owner:'#722ed1', admin:'#1890ff', collaborator:'#52c41a', viewer:'#fa8c16' };
+                const roleLabels  = { owner:'Owner',   admin:'Admin',   collaborator:'Can Edit', viewer:'View Only' };
+
+                if (members.length === 0) {
+                    container.innerHTML = '<div style="color:#999;text-align:center;padding:20px;font-size:13px;">No members yet.</div>';
+                    return;
                 }
 
-                enableCloudSync();
-
-                const baseUrl = window.location.origin + window.location.pathname;
-                const shareUrl = `${baseUrl}?board=${cloudBoardId}&access=${accessLevel}`;
-                currentShareLink = shareUrl;
-
-                document.getElementById('shareLink').value = shareUrl;
-                document.getElementById('shareLinksSection').style.display = 'block';
-                document.getElementById('cloudSyncInfo').style.display = 'block';
-                document.getElementById('cloudBoardId').textContent = cloudBoardId;
-                document.getElementById('generateShareLinkBtn').style.display = 'none';
-                document.getElementById('stopSharingBtn').style.display = 'inline-flex';
-                document.getElementById('activeCollaborators').style.display = 'block';
-
-                showNotification('✅ Cloud sync enabled! Share link generated.');
-            } else {
-                // Local export mode (no real-time sync)
-                const data = {
-                    positions: positions,
-                    nextPositionId: nextPositionId,
-                    accessLevel: accessLevel,
-                    exportDate: new Date().toISOString()
-                };
-
-                const dataStr = JSON.stringify(data);
-                const encodedData = btoa(encodeURIComponent(dataStr));
-                const baseUrl = window.location.origin + window.location.pathname;
-                const shareUrl = `${baseUrl}?data=${encodedData}&access=${accessLevel}`;
-                currentShareLink = shareUrl;
-
-                document.getElementById('shareLink').value = shareUrl;
-                document.getElementById('shareLinksSection').style.display = 'block';
-                document.getElementById('cloudSyncInfo').style.display = 'none';
-                document.getElementById('generateShareLinkBtn').style.display = 'none';
-                document.getElementById('stopSharingBtn').style.display = 'inline-flex';
-
-                showNotification('✅ Share link generated (local data, no real-time sync)');
+                container.innerHTML = members.map(m => `
+                    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f5f5f5;">
+                        <div style="width:34px;height:34px;border-radius:50%;background:${(roleColors[m.role]||'#1890ff')}22;
+                            display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;
+                            color:${roleColors[m.role]||'#1890ff'};flex-shrink:0;">
+                            ${escapeHtml((m.user.name||'?')[0].toUpperCase())}
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-weight:600;font-size:13px;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                ${escapeHtml(m.user.name)}${m.userId === currentUser?.id ? ' <span style="font-size:11px;color:#888;">(you)</span>' : ''}
+                            </div>
+                            <div style="font-size:12px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(m.user.email)}</div>
+                        </div>
+                        <span style="font-size:11px;font-weight:600;color:${roleColors[m.role]||'#666'};
+                            background:${(roleColors[m.role]||'#666')}18;padding:2px 8px;border-radius:10px;white-space:nowrap;flex-shrink:0;">
+                            ${roleLabels[m.role]||m.role}
+                        </span>
+                        ${canManage && m.role !== 'owner' ? `
+                            <div style="display:flex;gap:6px;flex-shrink:0;">
+                                <select onchange="changeMemberRole('${m.userId}', this.value)"
+                                    style="font-size:12px;padding:3px 6px;border:1px solid #d9d9d9;border-radius:4px;cursor:pointer;background:white;">
+                                    <option value="collaborator" ${m.role==='collaborator'?'selected':''}>Can Edit</option>
+                                    <option value="viewer"       ${m.role==='viewer'      ?'selected':''}>View Only</option>
+                                    <option value="admin"        ${m.role==='admin'       ?'selected':''}>Admin</option>
+                                </select>
+                                <button onclick="removeMember('${m.userId}','${escapeHtml(m.user.name)}')"
+                                    style="font-size:12px;padding:3px 8px;border:1px solid #ff4d4f;border-radius:4px;
+                                    color:#ff4d4f;background:white;cursor:pointer;" title="Remove from workspace">✕</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            } catch (err) {
+                container.innerHTML = `<div style="color:#ff4d4f;padding:12px;font-size:13px;">Error: ${escapeHtml(err.message)}</div>`;
             }
         }
 
-        // Copy share link to clipboard
-        function copyShareLink() {
-            const linkInput = document.getElementById('shareLink');
-            linkInput.select();
-            document.execCommand('copy');
-            showNotification('✅ Link copied to clipboard!');
-        }
-
-        // Stop sharing
-        function stopSharing() {
-            if (confirm('Stop sharing this board? This will disable cloud sync and invalidate the share link.')) {
-                disableCloudSync();
-                cloudBoardId = null;
-                currentShareLink = null;
-
-                document.getElementById('shareLinksSection').style.display = 'none';
-                document.getElementById('cloudSyncInfo').style.display = 'none';
-                document.getElementById('generateShareLinkBtn').style.display = 'inline-flex';
-                document.getElementById('stopSharingBtn').style.display = 'none';
-                document.getElementById('activeCollaborators').style.display = 'none';
-
-                showNotification('🔒 Sharing stopped. Board is now private.');
+        async function changeMemberRole(userId, newRole) {
+            try {
+                await apiCall('PATCH', `/workspaces/${currentWorkspaceId}/members/${userId}`, { role: newRole });
+                showNotification('✅ Role updated');
+                await loadWorkspaceMembers();
+            } catch (err) {
+                showNotification(`❌ ${err.message}`, 5000, 'error');
+                await loadWorkspaceMembers(); // reset the select
             }
         }
 
-        // Enable cloud sync
-        function enableCloudSync() {
-            if (cloudSyncEnabled) return;
-
-            cloudSyncEnabled = true;
-
-            // Save to cloud immediately
-            syncToCloud();
-
-            // Set up auto-sync every 5 seconds
-            syncInterval = setInterval(() => {
-                syncFromCloud();
-            }, 5000);
-
-            updateSyncStatus('Connected', '#52c41a');
-            showNotification('☁️ Cloud sync enabled');
-        }
-
-        // Disable cloud sync
-        function disableCloudSync() {
-            if (!cloudSyncEnabled) return;
-
-            cloudSyncEnabled = false;
-
-            if (syncInterval) {
-                clearInterval(syncInterval);
-                syncInterval = null;
+        async function removeMember(userId, name) {
+            if (!confirm(`Remove ${name} from this workspace?`)) return;
+            try {
+                await apiCall('DELETE', `/workspaces/${currentWorkspaceId}/members/${userId}`);
+                showNotification(`✅ ${name} removed from workspace`);
+                await loadWorkspaceMembers();
+            } catch (err) {
+                showNotification(`❌ ${err.message}`, 5000, 'error');
             }
-
-            updateSyncStatus('Disconnected', '#999');
         }
 
-        // Sync data to cloud (save)
-        function syncToCloud() {
-            if (!cloudBoardId) return;
-
-            const data = {
-                positions: positions,
-                nextPositionId: nextPositionId,
-                lastModified: new Date().toISOString(),
-                accessLevel: accessLevel
-            };
-
-            // Store in localStorage with board ID for simulation
-            // In production, this would be an API call to your backend
-            const cloudKey = `cloud_board_${cloudBoardId}`;
-            localStorage.setItem(cloudKey, JSON.stringify(data));
-
-            updateSyncStatus('Synced', '#52c41a');
-            console.log('Synced to cloud:', cloudBoardId);
-        }
-
-        // Sync data from cloud (load)
-        function syncFromCloud() {
-            if (!cloudBoardId) return;
-
-            const cloudKey = `cloud_board_${cloudBoardId}`;
-            const cloudData = localStorage.getItem(cloudKey);
-
-            if (cloudData) {
-                try {
-                    const data = JSON.parse(cloudData);
-
-                    // Check if cloud data is newer
-                    const localTimestamp = localStorage.getItem(STORAGE_KEY + '_timestamp');
-                    if (data.lastModified > localTimestamp) {
-                        positions = data.positions;
-                        nextPositionId = data.nextPositionId;
-                        renderAll();
-                        updateSyncStatus('Updated from cloud', '#52c41a');
-                        console.log('Updated from cloud:', cloudBoardId);
-                    }
-                } catch (error) {
-                    console.error('Error syncing from cloud:', error);
-                    updateSyncStatus('Sync error', '#ff4d4f');
+        // Called after login/register if a ?invite=TOKEN was in the URL
+        async function acceptPendingInvite() {
+            if (!pendingInviteToken) return null;
+            const token = pendingInviteToken;
+            pendingInviteToken = null;
+            try {
+                const result = await apiCall('POST', '/workspaces/accept-invite', { token });
+                if (result) {
+                    showNotification('✅ You\'ve joined the workspace!', 4000, 'success');
+                    return result.workspaceId;
                 }
+            } catch (err) {
+                showNotification(`❌ Invite error: ${err.message}`, 6000, 'error');
             }
+            return null;
         }
 
-        // Update sync status indicator
-        function updateSyncStatus(status, color) {
-            const syncStatus = document.getElementById('syncStatus');
-            const syncStatusText = document.getElementById('cloudSyncStatusText');
-
-            if (syncStatus) {
-                syncStatus.textContent = '☁️ ' + status;
-                syncStatus.style.color = color;
-            }
-
-            if (syncStatusText) {
-                syncStatusText.textContent = status;
-                syncStatusText.style.color = color;
-            }
-        }
-
-        // Override saveToLocalStorage to also sync to cloud
-        const originalSaveToLocalStorage = saveToLocalStorage;
-        saveToLocalStorage = function() {
-            originalSaveToLocalStorage();
-
-            // Also save timestamp
-            localStorage.setItem(STORAGE_KEY + '_timestamp', new Date().toISOString());
-
-            // Sync to cloud if enabled
-            if (cloudSyncEnabled && cloudBoardId) {
-                syncToCloud();
-            }
-        };
-
-        // Check if opened with shared link
+        // Parse URL params — never skips auth; just stores pending state
         function checkSharedLink() {
             const urlParams = new URLSearchParams(window.location.search);
 
-            // Check for cloud sync board ID
+            if (urlParams.has('invite')) {
+                pendingInviteToken = urlParams.get('invite');
+                window.history.replaceState({}, '', window.location.pathname);
+            }
             if (urlParams.has('board')) {
-                cloudBoardId = urlParams.get('board');
-                const linkAccessLevel = urlParams.get('access') || 'edit';
-
-                showNotification('📂 Loading shared board...');
-
-                // Load from cloud
-                const cloudKey = `cloud_board_${cloudBoardId}`;
-                const cloudData = localStorage.getItem(cloudKey);
-
-                if (cloudData) {
-                    try {
-                        const data = JSON.parse(cloudData);
-                        positions = data.positions;
-                        nextPositionId = data.nextPositionId;
-                        accessLevel = linkAccessLevel;
-
-                        // Enable cloud sync for this board
-                        document.getElementById('enableCloudSync').checked = true;
-                        enableCloudSync();
-
-                        showNotification('✅ Shared board loaded! Real-time sync active.');
-
-                        // Set read-only mode if view-only access
-                        if (linkAccessLevel === 'view') {
-                            enableViewOnlyMode();
-                        }
-
-                        return true;
-                    } catch (error) {
-                        console.error('Error loading shared board:', error);
-                        showNotification('❌ Error loading shared board');
-                    }
-                } else {
-                    showNotification('⚠️ Board not found. Creator needs to share data first.');
-                }
+                pendingBoardId = urlParams.get('board');
+                window.history.replaceState({}, '', window.location.pathname);
             }
-
-            // Check for inline data (no real-time sync)
-            if (urlParams.has('data')) {
-                try {
-                    const encodedData = urlParams.get('data');
-                    const dataStr = decodeURIComponent(atob(encodedData));
-                    const data = JSON.parse(dataStr);
-
-                    positions = data.positions;
-                    nextPositionId = data.nextPositionId;
-                    accessLevel = urlParams.get('access') || 'edit';
-
-                    showNotification('✅ Shared board loaded!');
-
-                    // Set read-only mode if view-only access
-                    if (accessLevel === 'view') {
-                        enableViewOnlyMode();
-                    }
-
-                    return true;
-                } catch (error) {
-                    console.error('Error loading shared data:', error);
-                    showNotification('❌ Invalid share link');
-                }
-            }
-
-            return false;
+            return false; // never short-circuit auth
         }
 
-        // Enable view-only mode
-        function enableViewOnlyMode() {
-            // Disable all edit buttons
-            const style = document.createElement('style');
-            style.innerHTML = `
-                .btn-primary, .add-position-btn, .action-btn,
-                button[onclick*="showModal('newPositionModal')"],
-                button[onclick*="showModal('candidateModal')"],
-                button[onclick*="delete"],
-                button[onclick*="removeColumn"],
-                .btn-danger {
-                    display: none !important;
-                }
-
-                td[onclick] {
-                    pointer-events: none !important;
-                    cursor: default !important;
-                }
-
-                .demo-banner {
-                    background: #ff9800 !important;
-                }
-            `;
-            document.head.appendChild(style);
-
-            // Update banner text
-            const banner = document.querySelector('.demo-banner');
-            if (banner) {
-                banner.innerHTML = '👁️ VIEW-ONLY MODE - You cannot edit this board<span id="lastSavedIndicator" style="margin-left: 12px;"></span><span id="syncStatus" style="margin-left: 12px;"></span>';
-            }
-
-            showNotification('👁️ Viewing in read-only mode');
-        }
+        // Stubs for any legacy references (no-ops)
+        } // end generateBoardId stub (no-op)
 
         // ========================================
         // INITIALIZATION
         // ========================================
 
         (async function init() {
-            const sharedLinkLoaded = checkSharedLink();
-            if (sharedLinkLoaded) { renderAll(); return; }
+            // Parse ?invite=TOKEN or ?board=ID from URL and store as pending state.
+            // Never short-circuits auth — the user must log in to act on these.
+            checkSharedLink();
+
+            // If there's a pending invite, fetch context to show a friendly notice
+            if (pendingInviteToken) {
+                try {
+                    const info = await fetch(`${API_BASE}/invite-info?token=${encodeURIComponent(pendingInviteToken)}`).then(r => r.json());
+                    if (info && !info.error) {
+                        const notice = document.getElementById('inviteNotice');
+                        if (notice) {
+                            notice.style.display = 'block';
+                            notice.innerHTML = `<strong>${escapeHtml(info.inviterName)}</strong> invited you to join <strong>"${escapeHtml(info.workspaceName)}"</strong> as <strong>${escapeHtml(info.role)}</strong>.<br>Log in or create an account to accept.`;
+                        }
+                    }
+                } catch {}
+            }
 
             if (isAuthenticated()) {
                 // Show cached profile immediately so header doesn't flash empty
@@ -5265,6 +5176,11 @@
                         currentUser = me;
                         localStorage.setItem('sb_user', JSON.stringify(me));
                         updateUserDisplay();
+                        // If user opened an invite link while already logged in, accept it now
+                        if (pendingInviteToken) {
+                            const joinedWsId = await acceptPendingInvite();
+                            if (joinedWsId) pendingBoardId = joinedWsId;
+                        }
                         await loadFromAPI();
                         return;
                     }

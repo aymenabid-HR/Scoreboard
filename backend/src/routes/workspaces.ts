@@ -127,15 +127,22 @@ router.post('/:workspaceId/invite', requireRole('admin'), validate(inviteMemberS
     },
   });
 
-  await sendInvitationEmail(
-    email,
-    invitation.invitedBy.name,
-    invitation.workspace.name,
-    role,
-    token
-  );
+  const appUrl = process.env.FRONTEND_URL ?? `http://localhost:${process.env.PORT ?? 3001}`;
+  const inviteLink = `${appUrl}/?invite=${token}`;
 
-  res.status(201).json({ message: `Invitation sent to ${email}` });
+  let emailSent = false;
+  try {
+    await sendInvitationEmail(email, invitation.invitedBy.name, invitation.workspace.name, role, token);
+    emailSent = true;
+  } catch (emailErr) {
+    console.warn('[invite] Email delivery skipped (SMTP not configured?):', (emailErr as Error).message);
+  }
+
+  res.status(201).json({
+    message: emailSent ? `Invitation sent to ${email}` : `Invitation created for ${email}`,
+    inviteLink,
+    emailSent,
+  });
 });
 
 // ─── POST /api/workspaces/accept-invite ──────────────────────────────────────

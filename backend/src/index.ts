@@ -7,6 +7,7 @@ import path from 'path';
 
 import authRouter from './routes/auth';
 import workspacesRouter from './routes/workspaces';
+import prisma from './lib/prisma';
 import positionsRouter from './routes/positions';
 import candidatesRouter from './routes/candidates';
 import filesRouter from './routes/files';
@@ -64,6 +65,27 @@ app.get('/api/health', (_req, res) => {
 // Docker:     /app/dist/index.js → ../DEMO.html = /app/DEMO.html
 app.get('/', (_req, res) => {
   res.sendFile(path.resolve(__dirname, '../DEMO.html'));
+});
+
+// ─── Pre-auth: peek at invite details (no JWT required) ───────────────────────
+// Used by the frontend to show "You've been invited by X to workspace Y" before login.
+app.get('/api/invite-info', async (req, res) => {
+  const { token } = req.query;
+  if (!token || typeof token !== 'string') {
+    res.status(400).json({ error: 'token is required' });
+    return;
+  }
+  const invite = await prisma.invitation.findUnique({
+    where: { token },
+    include: {
+      workspace: { select: { name: true } },
+      invitedBy:  { select: { name: true } },
+    },
+  });
+  if (!invite) { res.status(404).json({ error: 'Invitation not found' }); return; }
+  if (invite.acceptedAt) { res.status(400).json({ error: 'Invitation already accepted' }); return; }
+  if (invite.expiresAt < new Date()) { res.status(400).json({ error: 'Invitation has expired' }); return; }
+  res.json({ workspaceName: invite.workspace.name, inviterName: invite.invitedBy.name, role: invite.role, email: invite.email });
 });
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
