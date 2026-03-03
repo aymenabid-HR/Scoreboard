@@ -2,6 +2,10 @@
 FROM node:20-slim AS builder
 WORKDIR /app
 
+# OpenSSL is required for Prisma to detect the system SSL version and
+# generate the correct engine binary (debian-openssl-3.0.x)
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
 # Install dependencies first (cached layer)
 COPY backend/package*.json ./
 RUN npm ci
@@ -22,6 +26,9 @@ RUN npm run build
 FROM node:20-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+
+# OpenSSL required at runtime for Prisma engine to load libssl.so.3
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 # Production dependencies only
 COPY backend/package*.json ./
