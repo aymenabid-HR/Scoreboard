@@ -2072,17 +2072,19 @@
             cursor: pointer;
         }
         .cell-text-inner {
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+            display: -webkit-box !important;
+            -webkit-line-clamp: 3 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
             line-height: 1.6;
             word-break: break-word;
-            white-space: pre-wrap;
+            /* NOTE: white-space must NOT be pre-wrap — it breaks -webkit-line-clamp */
         }
         .cell-text-wrap.expanded .cell-text-inner {
-            display: block;
-            overflow: visible;
+            display: block !important;
+            -webkit-line-clamp: unset !important;
+            overflow: visible !important;
+            max-height: none !important;
         }
         .cell-expand-hint {
             display: inline-flex;
