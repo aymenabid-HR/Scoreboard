@@ -2065,6 +2065,55 @@
         .file-menu-item.fmi-danger { color: #e03131 !important; }
         .file-menu-item.fmi-danger:hover { background: #fff5f5 !important; }
         .file-menu-separator { height: 1px !important; background: #f0f0f0 !important; margin: 4px 0 !important; }
+
+        /* ── Expandable text cells ──────────────────────────────────────────────── */
+        .cell-text-wrap {
+            position: relative;
+            cursor: pointer;
+        }
+        .cell-text-inner {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.6;
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
+        .cell-text-wrap.expanded .cell-text-inner {
+            display: block;
+            overflow: visible;
+        }
+        .cell-expand-hint {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            margin-top: 5px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #b0b8c8;
+            user-select: none;
+            letter-spacing: 0.02em;
+            transition: color 0.15s;
+        }
+        .cell-text-wrap:hover .cell-expand-hint,
+        .cell-text-wrap:focus-visible .cell-expand-hint {
+            color: var(--primary, #0073ea);
+        }
+        .cell-expand-hint svg {
+            width: 10px;
+            height: 10px;
+            flex-shrink: 0;
+            transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .cell-text-wrap.expanded .cell-expand-hint svg {
+            transform: rotate(180deg);
+        }
+        .cell-text-wrap:focus-visible {
+            outline: 2px solid var(--primary, #0073ea);
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -3422,7 +3471,27 @@
                     // Make cells editable (email/phone are hidden, file type has its own handlers)
                     if (col.type !== 'file' && col.type !== 'email' && col.type !== 'phone') {
                         td.style.cursor = 'pointer';
-                        td.onclick = () => makeEditable(position.id, candidate.id, col.name, col.type, td, value);
+                        td.onclick = (e) => {
+                            // If this cell has a collapsed text-clamp wrapper, expand it first
+                            const wrap = td.querySelector('.cell-text-wrap');
+                            if (wrap && !wrap.classList.contains('expanded')) {
+                                e.stopPropagation();
+                                // Collapse any other expanded cells
+                                document.querySelectorAll('.cell-text-wrap.expanded').forEach(w => {
+                                    w.classList.remove('expanded');
+                                    w.setAttribute('aria-expanded', 'false');
+                                    const lbl = w.querySelector('.ctw-label');
+                                    if (lbl) lbl.textContent = 'Show more';
+                                });
+                                wrap.classList.add('expanded');
+                                wrap.setAttribute('aria-expanded', 'true');
+                                const lbl = wrap.querySelector('.ctw-label');
+                                if (lbl) lbl.textContent = 'Show less';
+                                return;
+                            }
+                            // Already expanded or no wrap: open editor
+                            makeEditable(position.id, candidate.id, col.name, col.type, td, value);
+                        };
                     }
 
                     tr.appendChild(td);
@@ -3495,6 +3564,16 @@
                 case 'text':
                     if (columnName === 'Name') {
                         return `<strong>${value}</strong>`;
+                    }
+                    if (value && value.length > 80) {
+                        const _safe = value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+                        return `<div class="cell-text-wrap" tabindex="0" role="button" aria-expanded="false" title="Click to expand · Click again to edit">
+                            <div class="cell-text-inner">${_safe}</div>
+                            <div class="cell-expand-hint" aria-hidden="true">
+                                <svg viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                <span class="ctw-label">Show more</span>
+                            </div>
+                        </div>`;
                     }
                     return value || '-';
 
@@ -4663,7 +4742,18 @@
         }
 
         // ── Global handlers: close on outside click / Escape key ────────────────
+
+        function _collapseAllTextCells() {
+            document.querySelectorAll('.cell-text-wrap.expanded').forEach(w => {
+                w.classList.remove('expanded');
+                w.setAttribute('aria-expanded', 'false');
+                const lbl = w.querySelector('.ctw-label');
+                if (lbl) lbl.textContent = 'Show more';
+            });
+        }
+
         document.addEventListener('click', function(e) {
+            // Close file menus
             if (!e.target.closest('.file-cell-wrap')) {
                 document.querySelectorAll('.file-menu-dropdown').forEach(d => {
                     d.style.display = 'none';
@@ -4671,9 +4761,25 @@
                     if (b) b.setAttribute('aria-expanded', 'false');
                 });
             }
+            // Collapse expanded text cells when clicking outside them
+            if (!e.target.closest('.cell-text-wrap')) {
+                _collapseAllTextCells();
+            }
         });
 
         document.addEventListener('keydown', function(e) {
+            // ── Text cell keyboard support ──────────────────────────────────────
+            if (e.key === 'Escape') {
+                const hadOpen = document.querySelector('.cell-text-wrap.expanded');
+                if (hadOpen) { e.stopPropagation(); _collapseAllTextCells(); return; }
+            }
+            if ((e.key === 'Enter' || e.key === ' ') && document.activeElement?.classList.contains('cell-text-wrap')) {
+                e.preventDefault();
+                document.activeElement.click();
+                return;
+            }
+
+            // ── File menu keyboard support ──────────────────────────────────────
             const openMenu = document.querySelector('.file-menu-dropdown[style*="block"]');
             if (!openMenu) return;
 
