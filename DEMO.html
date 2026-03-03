@@ -2512,7 +2512,7 @@
 
         let _accessToken  = localStorage.getItem('sb_access_token')  || null;
         let _refreshToken = localStorage.getItem('sb_refresh_token') || null;
-        let currentUser   = null;
+        let currentUser   = (() => { try { const s = localStorage.getItem('sb_user'); return s ? JSON.parse(s) : null; } catch { return null; } })();
 
         function setTokens(access, refresh) {
             _accessToken  = access;
@@ -2524,6 +2524,7 @@
         function clearTokens() {
             setTokens(null, null);
             currentUser = null;
+            localStorage.removeItem('sb_user');
         }
 
         function isAuthenticated() { return !!_accessToken; }
@@ -2644,6 +2645,7 @@
                 if (!data) return;
                 setTokens(data.accessToken, data.refreshToken);
                 currentUser = data.user;
+                localStorage.setItem('sb_user', JSON.stringify(data.user));
                 hideAuthModal();
                 updateUserDisplay();
                 await loadFromAPI();
@@ -2663,6 +2665,7 @@
                 if (!data) return;
                 setTokens(data.accessToken, data.refreshToken);
                 currentUser = data.user;
+                localStorage.setItem('sb_user', JSON.stringify(data.user));
                 hideAuthModal();
                 updateUserDisplay();
                 await loadFromAPI();
@@ -5245,15 +5248,28 @@
             if (sharedLinkLoaded) { renderAll(); return; }
 
             if (isAuthenticated()) {
+                // Show cached profile immediately so header doesn't flash empty
+                if (currentUser) updateUserDisplay();
+
                 try {
                     const me = await apiCall('GET', '/auth/me');
                     if (me) {
                         currentUser = me;
+                        localStorage.setItem('sb_user', JSON.stringify(me));
                         updateUserDisplay();
                         await loadFromAPI();
                         return;
                     }
-                } catch { clearTokens(); }
+                    // null returned: apiCall already cleared tokens + showed login modal
+                    // (happens when access token expired AND refresh token also invalid)
+                    return;
+                } catch (err) {
+                    // Network / server error — keep the session, let the user retry
+                    // Do NOT wipe tokens: a transient 500 should not log the user out
+                    console.warn('[init] session check failed:', err.message);
+                    showNotification('⚠️ Could not reach the server. Please refresh the page.', 6000, 'error');
+                    return;
+                }
             }
 
             // Not authenticated — show empty state and login
