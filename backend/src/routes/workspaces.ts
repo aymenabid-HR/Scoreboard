@@ -145,6 +145,44 @@ router.post('/:workspaceId/invite', requireRole('admin'), validate(inviteMemberS
   });
 });
 
+// ─── POST /api/workspaces/:workspaceId/join ───────────────────────────────────
+// Called when a user opens ?board=WORKSPACE_ID but isn't a member yet.
+// Auto-accepts any valid pending invitation for the user's email to this workspace.
+router.post('/:workspaceId/join', async (req: AuthRequest, res: Response) => {
+  const { workspaceId } = req.params;
+
+  // Already a member? Return success immediately.
+  const existing = await prisma.workspaceMember.findUnique({
+    where: { workspaceId_userId: { workspaceId, userId: req.userId } },
+  });
+  if (existing) {
+    res.json({ workspaceId, role: existing.role, alreadyMember: true });
+    return;
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: req.userId } });
+  if (!user) { res.status(401).json({ error: 'User not found' }); return; }
+
+  // Find a valid pending invite for this user's email
+  const invite = await prisma.invitation.findFirst({
+    where: { workspaceId, email: user.email, acceptedAt: null, expiresAt: { gt: new Date() } },
+  });
+
+  if (!invite) {
+    res.status(403).json({ error: "You don't have access to this workspace. Ask the owner to invite you." });
+    return;
+  }
+
+  await prisma.$transaction([
+    prisma.workspaceMember.create({
+      data: { workspaceId, userId: req.userId, role: invite.role, invitedById: invite.invitedById },
+    }),
+    prisma.invitation.update({ where: { id: invite.id }, data: { acceptedAt: new Date() } }),
+  ]);
+
+  res.json({ workspaceId, role: invite.role, alreadyMember: false });
+});
+
 // ─── POST /api/workspaces/accept-invite ──────────────────────────────────────
 router.post('/accept-invite', validate(acceptInviteSchema), async (req: AuthRequest, res: Response) => {
   const { token } = req.body;

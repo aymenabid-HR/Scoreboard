@@ -2695,36 +2695,55 @@
                 const apiWorkspaces = await apiCall('GET', '/workspaces');
                 if (!apiWorkspaces) return;
 
-                if (apiWorkspaces.length === 0) {
-                    // New user — create a default workspace via API
+                // Only auto-create a default workspace when there's no shared board to join.
+                // If pendingBoardId is set, the user may be about to join someone else's workspace.
+                if (apiWorkspaces.length === 0 && !pendingBoardId) {
                     const created = await apiCall('POST', '/workspaces', {
                         name: 'Recruitment Scoreboard', description: 'Main board', icon: '👥', color: '#1890ff'
                     });
                     if (created) apiWorkspaces.push(created);
                 }
 
-                workspaces = apiWorkspaces.map(w => ({
-                    id: w.id,          // UUID used as local id
-                    _apiId: w.id,
-                    name: w.name,
-                    description: w.description,
-                    icon: w.icon || '📋',
-                    color: w.color,
-                    positions: [],
-                    nextPositionId: 1,
-                    createdAt: w.createdAt,
+                const mapWs = arr => arr.map(w => ({
+                    id: w.id, _apiId: w.id, name: w.name, description: w.description,
+                    icon: w.icon || '📋', color: w.color, positions: [], nextPositionId: 1, createdAt: w.createdAt,
                 }));
 
-                // If a ?board=ID was in the URL, switch to that workspace
-                if (pendingBoardId && workspaces.find(w => w.id === pendingBoardId)) {
-                    currentWorkspaceId = pendingBoardId;
-                } else {
-                    if (pendingBoardId) {
-                        showNotification("⚠️ You don't have access to the shared workspace. Ask the owner to invite you.", 6000, 'warning');
+                workspaces = mapWs(apiWorkspaces);
+
+                if (pendingBoardId) {
+                    if (workspaces.find(w => w.id === pendingBoardId)) {
+                        // Already a member — just switch to it
+                        currentWorkspaceId = pendingBoardId;
+                    } else {
+                        // Not a member yet — try to auto-accept any pending invite for this workspace
+                        try {
+                            const joinResult = await apiCall('POST', `/workspaces/${pendingBoardId}/join`, {});
+                            if (joinResult) {
+                                // Re-fetch workspaces so the joined workspace is included
+                                const refreshed = await apiCall('GET', '/workspaces');
+                                if (refreshed && refreshed.length > 0) workspaces = mapWs(refreshed);
+                                currentWorkspaceId = pendingBoardId;
+                                showNotification("✅ You've joined the workspace!", 4000, 'success');
+                            } else {
+                                currentWorkspaceId = workspaces[0]?.id || null;
+                            }
+                        } catch (joinErr) {
+                            showNotification(`⚠️ ${joinErr.message}`, 6000, 'warning');
+                            // If user has no workspaces at all, create a default one now
+                            if (workspaces.length === 0) {
+                                const created = await apiCall('POST', '/workspaces', {
+                                    name: 'Recruitment Scoreboard', description: 'Main board', icon: '👥', color: '#1890ff'
+                                });
+                                if (created) workspaces = mapWs([created]);
+                            }
+                            currentWorkspaceId = workspaces[0]?.id || null;
+                        }
                     }
+                    pendingBoardId = null;
+                } else {
                     currentWorkspaceId = workspaces[0]?.id || null;
                 }
-                pendingBoardId = null;
                 renderWorkspaceList();
                 await loadPositionsFromAPI();
                 renderAll();
