@@ -4450,6 +4450,46 @@
             }, 1000);
         }
 
+        // Fetch file bytes from the API using the auth token, create a blob URL.
+        // Blob URLs work inside <iframe> without needing CORS or public URLs.
+        async function _fetchFileBlob(fileId) {
+            const headers = {};
+            if (_accessToken) headers['Authorization'] = `Bearer ${_accessToken}`;
+            const resp = await fetch(`${API_BASE}/files/${fileId}/content`, { headers });
+            if (resp.status === 401 && _refreshToken) {
+                const ok = await tryRefreshToken();
+                if (ok) {
+                    headers['Authorization'] = `Bearer ${_accessToken}`;
+                    const retry = await fetch(`${API_BASE}/files/${fileId}/content`, { headers });
+                    if (!retry.ok) throw new Error(`HTTP ${retry.status}`);
+                    return retry.blob();
+                }
+                clearTokens(); showAuthModal(); throw new Error('Session expired');
+            }
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            return resp.blob();
+        }
+
+        function _showFileInViewer(fileData, candidateName, columnName, blobUrl) {
+            // Revoke previous object URL to free memory
+            if (currentResumeData?._objectUrl) URL.revokeObjectURL(currentResumeData._objectUrl);
+            currentResumeData = { ...fileData, _objectUrl: blobUrl };
+            document.getElementById('resumeViewerTitle').textContent =
+                `${columnName}: ${candidateName} — ${fileData.name}`;
+            const content = document.getElementById('resumeViewerContent');
+            if (fileData.type === 'application/pdf') {
+                content.innerHTML = `<iframe src="${blobUrl}" style="width:100%;height:100%;border:none;"></iframe>`;
+            } else {
+                content.innerHTML = `<div style="text-align:center;padding:60px 20px;">
+                    <div style="font-size:48px;margin-bottom:16px;">📄</div>
+                    <h3>${fileData.name}</h3>
+                    <p style="color:#999;">${fileData.type} · ${(fileData.size/1024).toFixed(1)} KB</p>
+                    <button class="btn btn-primary" onclick="downloadCurrentResume()">📥 Download File</button>
+                </div>`;
+            }
+            showModal('resumeViewerModal');
+        }
+
         function viewFile(event, columnName) {
             event.stopPropagation();
             const cell = event.target.closest('td');
@@ -4459,41 +4499,41 @@
             const tbody = row.closest('tbody');
             const rowIndex = Array.from(tbody.children).indexOf(row);
 
-            const positionId = tbody.id.replace('tbody-', ''); // UUID string — no parseInt
+            const positionId = tbody.id.replace('tbody-', '');
             const position = positions.find(p => p.id === positionId);
             if (!position || rowIndex >= position.candidates.length) return;
 
             const candidate = position.candidates[rowIndex];
             const fileData = candidate.data[columnName];
-
             if (!fileData) { alert('⚠️ No file found'); return; }
 
-            // API path — fetch signed URL then open
+            // API path — fetch bytes with auth header, create blob URL for iframe
             if (isAuthenticated() && fileData._fileId) {
-                apiCall('GET', `/files/${fileData._fileId}/url`).then(res => {
-                    if (!res) return;
-                    currentResumeData = { ...fileData, signedUrl: res.url };
-                    document.getElementById('resumeViewerTitle').textContent = `${columnName}: ${candidate.data['Name']} - ${fileData.name}`;
-                    const content = document.getElementById('resumeViewerContent');
-                    if (fileData.type === 'application/pdf') {
-                        content.innerHTML = `<iframe src="${res.url}" style="width:100%;height:100%;border:none;"></iframe>`;
-                    } else {
-                        content.innerHTML = `<div style="text-align:center;padding:60px 20px;"><div style="font-size:48px;margin-bottom:16px;">📄</div><h3>${fileData.name}</h3><p style="color:#999;">${fileData.type} · ${(fileData.size/1024).toFixed(1)} KB</p><button class="btn btn-primary" onclick="downloadCurrentResume()">📥 Download File</button></div>`;
-                    }
-                    showModal('resumeViewerModal');
-                }).catch(err => alert(`⚠️ Could not load file: ${err.message}`));
+                _fetchFileBlob(fileData._fileId)
+                    .then(blob => {
+                        const blobUrl = URL.createObjectURL(blob);
+                        _showFileInViewer(fileData, candidate.data['Name'] || '', columnName, blobUrl);
+                    })
+                    .catch(err => alert(`⚠️ Could not load file: ${err.message}`));
                 return;
             }
 
             // Local base64 fallback
             if (!fileData.data) { alert('⚠️ No file data'); return; }
-            currentResumeData = fileData;
-            document.getElementById('resumeViewerTitle').textContent = `${columnName}: ${candidate.data['Name']} - ${fileData.name}`;
+            if (currentResumeData?._objectUrl) URL.revokeObjectURL(currentResumeData._objectUrl);
+            currentResumeData = { ...fileData };
+            document.getElementById('resumeViewerTitle').textContent =
+                `${columnName}: ${candidate.data['Name'] || ''} — ${fileData.name}`;
             const content = document.getElementById('resumeViewerContent');
             if (fileData.type === 'application/pdf') {
                 content.innerHTML = `<iframe src="${fileData.data}" style="width:100%;height:100%;border:none;"></iframe>`;
             } else {
-                content.innerHTML = `<div style="text-align:center;padding:60px 20px;"><div style="font-size:48px;margin-bottom:16px;">📄</div><h3>${fileData.name}</h3><p style="color:#999;">${fileData.type} · ${(fileData.size/1024).toFixed(1)} KB</p><button class="btn btn-primary" onclick="downloadCurrentResume()">📥 Download File</button></div>`;
+                content.innerHTML = `<div style="text-align:center;padding:60px 20px;">
+                    <div style="font-size:48px;margin-bottom:16px;">📄</div>
+                    <h3>${fileData.name}</h3>
+                    <p style="color:#999;">${fileData.type} · ${(fileData.size/1024).toFixed(1)} KB</p>
+                    <button class="btn btn-primary" onclick="downloadCurrentResume()">📥 Download File</button>
+                </div>`;
             }
             showModal('resumeViewerModal');
         }
@@ -4507,7 +4547,7 @@
             const tbody = row.closest('tbody');
             const rowIndex = Array.from(tbody.children).indexOf(row);
 
-            const positionId = tbody.id.replace('tbody-', ''); // UUID string — no parseInt
+            const positionId = tbody.id.replace('tbody-', '');
             const position = positions.find(p => p.id === positionId);
             if (!position || rowIndex >= position.candidates.length) return;
 
@@ -4516,9 +4556,19 @@
             if (!fileData) { alert('⚠️ No file found'); return; }
 
             if (isAuthenticated() && fileData._fileId) {
-                apiCall('GET', `/files/${fileData._fileId}/url`).then(res => {
-                    if (res) downloadResumeFile({ ...fileData, signedUrl: res.url });
-                }).catch(err => alert(`⚠️ ${err.message}`));
+                _fetchFileBlob(fileData._fileId)
+                    .then(blob => {
+                        const blobUrl = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = blobUrl;
+                        link.download = fileData.name;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+                        showNotification('✅ File downloaded!');
+                    })
+                    .catch(err => alert(`⚠️ ${err.message}`));
                 return;
             }
             if (!fileData.data) { alert('⚠️ No file data'); return; }
@@ -4527,7 +4577,7 @@
 
         function downloadCurrentResume() {
             if (!currentResumeData) return;
-            const url = currentResumeData.signedUrl || currentResumeData.data;
+            const url = currentResumeData._objectUrl || currentResumeData.data;
             if (!url) { alert('⚠️ No file URL available'); return; }
             const link = document.createElement('a');
             link.href = url;
@@ -4539,7 +4589,7 @@
         }
 
         function downloadResumeFile(resumeData) {
-            const url = resumeData.signedUrl || resumeData.data;
+            const url = resumeData._objectUrl || resumeData.data;
             if (!url) return;
             const link = document.createElement('a');
             link.href = url;
