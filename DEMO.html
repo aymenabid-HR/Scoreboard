@@ -1394,26 +1394,38 @@
            MONDAY.COM-INSPIRED REDESIGN OVERRIDE
            ============================================= */
         :root {
-            --primary: #0073ea;
-            --primary-dark: #0060c0;
-            --primary-light: rgba(0,115,234,0.12);
-            --sidebar-bg: #2b2d42;
-            --sidebar-hover: rgba(255,255,255,0.07);
-            --sidebar-active: rgba(0,115,234,0.22);
-            --surface: #ffffff;
-            --bg: #f3f4f8;
-            --border: #e6e9ef;
-            --border-light: #f0f1f5;
-            --text: #323338;
-            --text-2: #676879;
-            --text-3: #c5c7d0;
-            --success: #00ca72;
-            --danger: #e2445c;
-            --warning: #fdab3d;
-            --radius: 8px;
-            --shadow: 0 2px 8px rgba(0,0,0,0.07);
-            --shadow-lg: 0 8px 32px rgba(0,0,0,0.14);
-            --t: all 0.15s ease;
+            /* ── Modern Indigo + Purple palette ─────────────── */
+            --primary:       #6366F1;   /* Indigo 500      */
+            --primary-dark:  #4F46E5;   /* Indigo 600      */
+            --primary-light: rgba(99,102,241,0.12);
+            --accent:        #8B5CF6;   /* Violet 500 — tags, indicators */
+
+            /* ── Layout ──────────────────────────────────────── */
+            --sidebar-bg:     #1E1B4B;  /* Indigo 950 — deep navy-indigo  */
+            --sidebar-hover:  rgba(255,255,255,0.07);
+            --sidebar-active: rgba(99,102,241,0.20);
+            --surface:        #ffffff;
+            --bg:             #F9FAFB;  /* Gray 50         */
+
+            /* ── Borders ─────────────────────────────────────── */
+            --border:       #E5E7EB;    /* Gray 200        */
+            --border-light: #F3F4F6;    /* Gray 100        */
+
+            /* ── Typography ──────────────────────────────────── */
+            --text:   #111827;          /* Gray 900        */
+            --text-2: #6B7280;          /* Gray 500        */
+            --text-3: #D1D5DB;          /* Gray 300        */
+
+            /* ── Semantic ────────────────────────────────────── */
+            --success: #10B981;         /* Emerald 500     */
+            --danger:  #EF4444;         /* Red 500         */
+            --warning: #F59E0B;         /* Amber 500       */
+
+            /* ── Misc ────────────────────────────────────────── */
+            --radius:    8px;
+            --shadow:    0 2px 8px  rgba(99,102,241,0.08);
+            --shadow-lg: 0 8px 32px rgba(99,102,241,0.16);
+            --t:         all 0.15s ease;
         }
 
         body {
@@ -1481,7 +1493,8 @@
         /* ── Sidebar ─────────────────────────────────── */
         .sidebar {
             width: 258px !important;
-            background: var(--sidebar-bg) !important;
+            /* Deep indigo gradient for depth */
+            background: linear-gradient(180deg, #1E1B4B 0%, #16133a 100%) !important;
             border-right: none !important;
         }
         .sidebar-header {
@@ -1518,7 +1531,7 @@
             transform: translateY(-50%);
             width: 3px;
             height: 52%;
-            background: var(--primary);
+            background: var(--accent);   /* violet accent for contrast on deep indigo sidebar */
             border-radius: 0 3px 3px 0;
         }
         .workspace-icon {
@@ -1541,9 +1554,9 @@
             font-weight: 600 !important;
         }
         .add-workspace-btn:hover {
-            border-color: var(--primary) !important;
-            color: var(--primary) !important;
-            background: rgba(0,115,234,0.1) !important;
+            border-color: var(--accent) !important;
+            color: var(--accent) !important;
+            background: rgba(139,92,246,0.12) !important;
         }
 
         /* ── Top Header ──────────────────────────────── */
@@ -1667,12 +1680,12 @@
         .btn-primary {
             background: var(--primary) !important;
             color: white !important;
-            box-shadow: 0 2px 8px rgba(0,115,234,0.22) !important;
+            box-shadow: 0 2px 8px rgba(99,102,241,0.28) !important;
         }
         .btn-primary:hover {
             background: var(--primary-dark) !important;
             transform: translateY(-1px) !important;
-            box-shadow: 0 4px 14px rgba(0,115,234,0.38) !important;
+            box-shadow: 0 4px 14px rgba(99,102,241,0.42) !important;
         }
         .btn-secondary {
             background: var(--surface) !important;
@@ -1755,7 +1768,7 @@
 
         /* ── Table ───────────────────────────────────── */
         table { font-size: 13px !important; }
-        thead { background: #f4f6fb !important; border-bottom: 1px solid var(--border) !important; }
+        thead { background: #F5F3FF !important; border-bottom: 1px solid var(--border) !important; }  /* Violet 50 */
         th {
             padding: 9px 14px !important;
             font-size: 11px !important;
@@ -1769,11 +1782,11 @@
             border-bottom: 1px solid var(--border-light) !important;
             vertical-align: middle !important;
         }
-        tr:hover { background: #f0f5ff !important; }
+        tr:hover { background: #EEF2FF !important; }  /* Indigo 50 */
         tr:last-child td { border-bottom: none !important; }
-        thead th:first-child { background: #f4f6fb !important; min-width: 180px !important; }
+        thead th:first-child { background: #F5F3FF !important; min-width: 180px !important; }  /* Violet 50 */
         tbody td:first-child { background: var(--surface) !important; }
-        tr:hover td:first-child { background: #f0f5ff !important; }
+        tr:hover td:first-child { background: #EEF2FF !important; }  /* Indigo 50 */
 
         /* Column header */
         .column-name-text { font-size: 11px !important; letter-spacing: 0.4px !important; }
@@ -1804,8 +1817,8 @@
         }
         .badge-green   { background: rgba(0,202,114,0.15) !important; color: #00693e !important; }
         .badge-red     { background: rgba(226,68,92,0.15) !important;  color: #c4314b !important; }
-        .badge-blue    { background: rgba(0,115,234,0.15) !important;  color: #0060c0 !important; }
-        .badge-purple  { background: rgba(157,80,221,0.15) !important; color: #6e3296 !important; }
+        .badge-blue    { background: rgba(99,102,241,0.12)  !important; color: #4338CA !important; }  /* Indigo */
+        .badge-purple  { background: rgba(139,92,246,0.12)  !important; color: #6D28D9 !important; }  /* Violet */
         .badge-orange  { background: rgba(255,100,0,0.15) !important;  color: #c84100 !important; }
         .badge-cyan    { background: rgba(0,201,232,0.15) !important;  color: #006f7e !important; }
         .badge-magenta { background: rgba(235,47,150,0.15) !important; color: #aa0e6e !important; }
@@ -1868,7 +1881,7 @@
             border: 1px solid var(--border) !important;
             top: 62px !important;
         }
-        .notification-item.unread { background: rgba(0,115,234,0.04) !important; border-left: 3px solid var(--primary) !important; }
+        .notification-item.unread { background: rgba(99,102,241,0.05) !important; border-left: 3px solid var(--primary) !important; }
 
         /* ── Modals ──────────────────────────────────── */
         .modal { backdrop-filter: blur(3px) !important; background: rgba(0,0,0,0.42) !important; }
@@ -1900,7 +1913,7 @@
         }
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
             border-color: var(--primary) !important;
-            box-shadow: 0 0 0 3px rgba(0,115,234,0.12) !important;
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.14) !important;
         }
         .modal-actions {
             margin-top: 20px !important;
@@ -1909,7 +1922,7 @@
         }
 
         /* ── Auth Modal ──────────────────────────────── */
-        .auth-overlay { background: radial-gradient(ellipse at 30% 40%, #2d3867 0%, #1a1f3a 100%) !important; }
+        .auth-overlay { background: radial-gradient(ellipse at 30% 40%, #312e81 0%, #1e1b4b 100%) !important; }
         .auth-box { border-radius: 16px !important; box-shadow: 0 24px 80px rgba(0,0,0,0.4) !important; }
         .auth-logo { font-size: 48px !important; }
         .auth-title { font-size: 24px !important; font-weight: 800 !important; }
@@ -4311,7 +4324,7 @@
                 success: { bg: '#00854d', icon: '✓' },
                 error:   { bg: '#e2445c', icon: '✕' },
                 warning: { bg: '#fdab3d', icon: '!' },
-                info:    { bg: '#0073ea', icon: 'ℹ' },
+                info:    { bg: '#6366F1', icon: 'ℹ' },
             };
             const c = cfg[type] || cfg.success;
             const notification = document.createElement('div');
