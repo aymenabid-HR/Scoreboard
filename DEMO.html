@@ -1986,6 +1986,85 @@
             .sidebar { display: none !important; }
             .header h1 { font-size: 14px !important; }
         }
+
+        /* ── File action three-dot menu ───────────────── */
+        .file-cell-wrap {
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            position: relative !important;
+        }
+        .file-menu-btn {
+            width: 26px !important; height: 26px !important;
+            border: 1px solid transparent !important;
+            background: transparent !important;
+            border-radius: 6px !important;
+            cursor: pointer !important;
+            font-size: 17px !important;
+            color: #999 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: background 0.15s, color 0.15s, border-color 0.15s !important;
+            line-height: 1 !important;
+            flex-shrink: 0 !important;
+            font-family: inherit !important;
+            letter-spacing: 0 !important;
+            padding: 0 !important;
+        }
+        .file-menu-btn:hover,
+        .file-menu-btn[aria-expanded="true"] {
+            background: #f0f0f0 !important;
+            color: #333 !important;
+            border-color: #e0e0e0 !important;
+        }
+        .file-menu-btn:focus-visible {
+            outline: 2px solid var(--primary, #0073ea) !important;
+            outline-offset: 1px !important;
+        }
+        .file-menu-dropdown {
+            position: absolute !important;
+            right: 0 !important;
+            top: calc(100% + 4px) !important;
+            background: #fff !important;
+            border: 1px solid #e8e8e8 !important;
+            border-radius: 10px !important;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.06) !important;
+            min-width: 158px !important;
+            z-index: 9999 !important;
+            padding: 5px 0 !important;
+            animation: fileMenuIn 0.12s ease !important;
+        }
+        .file-menu-dropdown.flip-up {
+            top: auto !important;
+            bottom: calc(100% + 4px) !important;
+        }
+        @keyframes fileMenuIn {
+            from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0)  scale(1);    }
+        }
+        .file-menu-item {
+            display: flex !important;
+            align-items: center !important;
+            gap: 9px !important;
+            width: 100% !important;
+            padding: 9px 14px !important;
+            background: none !important;
+            border: none !important;
+            font-size: 13px !important;
+            font-family: inherit !important;
+            color: #333 !important;
+            cursor: pointer !important;
+            text-align: left !important;
+            transition: background 0.1s !important;
+            white-space: nowrap !important;
+        }
+        .file-menu-item:hover   { background: #f5f7fa !important; }
+        .file-menu-item:focus   { outline: none !important; background: #eef3ff !important; }
+        .file-menu-item .fmi-icon { font-size: 14px !important; width: 18px !important; text-align: center !important; }
+        .file-menu-item.fmi-danger { color: #e03131 !important; }
+        .file-menu-item.fmi-danger:hover { background: #fff5f5 !important; }
+        .file-menu-separator { height: 1px !important; background: #f0f0f0 !important; margin: 4px 0 !important; }
     </style>
 </head>
 <body>
@@ -3468,14 +3547,35 @@
                     // Handle new format (object with file data)
                     if (typeof value === 'object' && value.name) {
                         const fileSizeKB = (value.size / 1024).toFixed(1);
+                        const shortName = value.name.length > 22 ? value.name.substring(0, 19) + '…' : value.name;
+                        const colAttr = columnName.replace(/'/g, "\\'");
                         return `
-                            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                                <span class="file-tag" style="cursor: pointer;" title="${value.name} (${fileSizeKB} KB)">
-                                    📄 ${value.name.length > 20 ? value.name.substring(0, 17) + '...' : value.name}
+                            <div class="file-cell-wrap">
+                                <span class="file-tag" title="${value.name} (${fileSizeKB} KB)"
+                                      onclick="viewFile(event,'${colAttr}')" style="cursor:pointer;">
+                                    📄 ${shortName}
                                 </span>
-                                <button class="action-btn" onclick="viewFile(event, '${columnName}')" style="font-size: 12px;">👁️ View</button>
-                                <button class="action-btn" onclick="downloadFile(event, '${columnName}')" style="font-size: 12px;">📥 Download</button>
-                                <button class="action-btn danger" onclick="deleteFile(event, '${columnName}')" style="font-size: 12px;">🗑️</button>
+                                <button class="file-menu-btn"
+                                        onclick="toggleFileMenu(event,'${colAttr}')"
+                                        aria-label="File actions"
+                                        aria-haspopup="true"
+                                        aria-expanded="false"
+                                        title="More actions">⋮</button>
+                                <div class="file-menu-dropdown" role="menu" aria-label="File actions menu" style="display:none;">
+                                    <button class="file-menu-item" role="menuitem"
+                                            onclick="closeFileMenu(this);viewFile(event,'${colAttr}')">
+                                        <span class="fmi-icon">👁️</span> Preview CV
+                                    </button>
+                                    <button class="file-menu-item" role="menuitem"
+                                            onclick="closeFileMenu(this);downloadFile(event,'${colAttr}')">
+                                        <span class="fmi-icon">📥</span> Download CV
+                                    </button>
+                                    <div class="file-menu-separator" role="separator"></div>
+                                    <button class="file-menu-item fmi-danger" role="menuitem"
+                                            onclick="closeFileMenu(this);deleteFile(event,'${colAttr}')">
+                                        <span class="fmi-icon">🗑️</span> Delete CV
+                                    </button>
+                                </div>
                             </div>
                         `;
                     }
@@ -4515,6 +4615,91 @@
             }
             showModal('resumeViewerModal');
         }
+
+        // ── File action dropdown ─────────────────────────────────────────────────
+
+        function toggleFileMenu(event, columnName) {
+            event.stopPropagation();
+            const btn      = event.currentTarget;
+            const dropdown = btn.nextElementSibling; // .file-menu-dropdown
+            const isOpen   = dropdown.style.display !== 'none';
+
+            // Close every other open menu first
+            document.querySelectorAll('.file-menu-dropdown').forEach(d => {
+                if (d !== dropdown) {
+                    d.style.display = 'none';
+                    const b = d.previousElementSibling;
+                    if (b) b.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            if (isOpen) {
+                dropdown.style.display = 'none';
+                btn.setAttribute('aria-expanded', 'false');
+            } else {
+                dropdown.style.display = 'block';
+                btn.setAttribute('aria-expanded', 'true');
+                // Flip upward if the dropdown would overflow the viewport bottom
+                requestAnimationFrame(() => {
+                    const rect = dropdown.getBoundingClientRect();
+                    if (rect.bottom > window.innerHeight - 8) {
+                        dropdown.classList.add('flip-up');
+                    } else {
+                        dropdown.classList.remove('flip-up');
+                    }
+                    // Move keyboard focus to the first item
+                    dropdown.querySelector('.file-menu-item')?.focus();
+                });
+            }
+        }
+
+        // Close the dropdown that contains the given element
+        function closeFileMenu(el) {
+            const dropdown = el.closest('.file-menu-dropdown');
+            if (!dropdown) return;
+            dropdown.style.display = 'none';
+            const btn = dropdown.previousElementSibling;
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+        }
+
+        // ── Global handlers: close on outside click / Escape key ────────────────
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.file-cell-wrap')) {
+                document.querySelectorAll('.file-menu-dropdown').forEach(d => {
+                    d.style.display = 'none';
+                    const b = d.previousElementSibling;
+                    if (b) b.setAttribute('aria-expanded', 'false');
+                });
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            const openMenu = document.querySelector('.file-menu-dropdown[style*="block"]');
+            if (!openMenu) return;
+
+            if (e.key === 'Escape') {
+                e.stopPropagation();
+                openMenu.style.display = 'none';
+                const btn = openMenu.previousElementSibling;
+                if (btn) { btn.setAttribute('aria-expanded', 'false'); btn.focus(); }
+                return;
+            }
+            const items = Array.from(openMenu.querySelectorAll('.file-menu-item'));
+            const focused = document.activeElement;
+            const idx = items.indexOf(focused);
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                items[(idx + 1) % items.length]?.focus();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                items[(idx - 1 + items.length) % items.length]?.focus();
+            } else if (e.key === 'Tab') {
+                openMenu.style.display = 'none';
+            }
+        });
+
+        // ── File preview / download / delete ────────────────────────────────────
 
         function viewFile(event, columnName) {
             event.stopPropagation();
