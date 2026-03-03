@@ -2129,6 +2129,98 @@
             outline-offset: 2px;
             border-radius: 4px;
         }
+
+        /* ── Toolbar Panels ──────────────────────────── */
+        .toolbar-btn.active { background: var(--primary-light) !important; color: var(--primary) !important; }
+        .toolbar-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 16px; height: 16px; padding: 0 4px;
+            background: var(--primary); color: #fff;
+            border-radius: 8px; font-size: 10px; font-weight: 700;
+            margin-left: 3px; line-height: 1;
+        }
+        #tbPanel {
+            position: absolute; z-index: 300;
+            background: #fff; border: 1px solid var(--border);
+            border-radius: 10px; box-shadow: var(--shadow-lg);
+            min-width: 280px; max-width: 340px;
+            padding: 14px 16px;
+            animation: popUp 0.15s ease;
+        }
+        .tb-panel-title {
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.6px; color: var(--text-2); margin-bottom: 10px;
+        }
+        /* Search panel */
+        .tb-search-wrap { display: flex; align-items: center; gap: 8px; }
+        .tb-search-wrap input {
+            flex: 1; padding: 7px 10px; border: 1px solid var(--border);
+            border-radius: 6px; font-size: 13px; font-family: inherit;
+            outline: none; transition: border-color 0.15s;
+        }
+        .tb-search-wrap input:focus { border-color: var(--primary); }
+        .tb-search-clear {
+            background: none; border: none; cursor: pointer;
+            color: var(--text-2); font-size: 16px; line-height: 1;
+            padding: 2px 4px; border-radius: 4px;
+        }
+        .tb-search-clear:hover { color: var(--danger); background: rgba(239,68,68,0.08); }
+        /* Filter / Sort chips */
+        .tb-chip-list { display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow-y: auto; }
+        .tb-chip {
+            display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+            border-radius: 6px; cursor: pointer; transition: background 0.12s; font-size: 13px;
+        }
+        .tb-chip:hover { background: var(--bg); }
+        .tb-chip.selected { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+        .tb-chip-check {
+            width: 16px; height: 16px; border: 2px solid var(--border); border-radius: 4px;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            transition: border-color 0.12s, background 0.12s;
+        }
+        .tb-chip.selected .tb-chip-check { border-color: var(--primary); background: var(--primary); }
+        .tb-chip.selected .tb-chip-check::after { content: '✓'; color: #fff; font-size: 10px; font-weight: 700; }
+        /* Sort controls */
+        .tb-sort-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .tb-sort-row label { font-size: 12px; color: var(--text-2); min-width: 40px; }
+        .tb-sort-row select {
+            flex: 1; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px;
+            font-size: 12px; font-family: inherit; outline: none; background: #fff;
+        }
+        .tb-sort-row select:focus { border-color: var(--primary); }
+        /* Hide toggles */
+        .tb-toggle-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 5px 0; border-bottom: 1px solid var(--bg);
+        }
+        .tb-toggle-row:last-child { border-bottom: none; }
+        .tb-toggle-name { font-size: 13px; color: var(--text); }
+        .tb-toggle {
+            width: 34px; height: 18px; border-radius: 9px;
+            background: #D1D5DB; border: none; cursor: pointer;
+            position: relative; transition: background 0.2s; flex-shrink: 0;
+        }
+        .tb-toggle.on { background: var(--primary); }
+        .tb-toggle::after {
+            content: ''; position: absolute; width: 14px; height: 14px;
+            border-radius: 50%; background: #fff; top: 2px; left: 2px;
+            transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .tb-toggle.on::after { left: 18px; }
+        /* Panel footer */
+        .tb-panel-footer { margin-top: 12px; display: flex; justify-content: flex-end; gap: 6px; }
+        .tb-btn-clear {
+            padding: 5px 12px; border: 1px solid var(--border); border-radius: 6px;
+            background: #fff; color: var(--text-2); font-size: 12px; cursor: pointer;
+            font-family: inherit;
+        }
+        .tb-btn-clear:hover { border-color: var(--danger); color: var(--danger); }
+        .tb-btn-apply {
+            padding: 5px 14px; border: none; border-radius: 6px;
+            background: var(--primary); color: #fff; font-size: 12px; font-weight: 600;
+            cursor: pointer; font-family: inherit;
+        }
+        .tb-btn-apply:hover { background: var(--primary-dark); }
     </style>
 </head>
 <body>
@@ -2216,21 +2308,21 @@
         </div>
 
         <!-- Board Toolbar -->
-        <div class="board-toolbar">
+        <div class="board-toolbar" style="position:relative;">
             <button class="btn btn-primary btn-sm" onclick="showModal('newPositionModal')">
                 + New Position
             </button>
             <div class="toolbar-divider"></div>
-            <button class="toolbar-btn" onclick="">
+            <button id="tbBtn-search" class="toolbar-btn" onclick="toggleToolbarPanel('search', this)">
                 🔍 Search
             </button>
-            <button class="toolbar-btn">
+            <button id="tbBtn-filter" class="toolbar-btn" onclick="toggleToolbarPanel('filter', this)">
                 ⚡ Filter
             </button>
-            <button class="toolbar-btn">
+            <button id="tbBtn-sort" class="toolbar-btn" onclick="toggleToolbarPanel('sort', this)">
                 ↕ Sort
             </button>
-            <button class="toolbar-btn">
+            <button id="tbBtn-hide" class="toolbar-btn" onclick="toggleToolbarPanel('hide', this)">
                 👁 Hide
             </button>
             <div style="flex:1;"></div>
@@ -2238,6 +2330,7 @@
                 ⊞ Group by status
             </button>
         </div>
+        <div id="tbPanel" style="display:none;"></div>
 
         <!-- Main Table View -->
         <div id="tableView" class="view-container active">
@@ -3377,6 +3470,304 @@
 
         let nextPositionId = 3;
 
+        // ── Toolbar state ──────────────────────────────────────────────
+        let _searchQuery   = '';
+        let _filterStatuses = new Set();
+        let _sortConfig    = { colName: '', dir: 'asc' };
+        let _activeTbPanel = null; // 'search' | 'filter' | 'sort' | 'hide' | null
+
+        // ── Toolbar functions ──────────────────────────────────────────
+
+        /* Toggle a toolbar panel open/closed */
+        function toggleToolbarPanel(name, btn) {
+            const panel = document.getElementById('tbPanel');
+            if (_activeTbPanel === name) {
+                _closeTbPanel(); return;
+            }
+            _activeTbPanel = name;
+            // Position panel below the clicked button
+            const rect = btn.getBoundingClientRect();
+            const toolbarRect = btn.closest('.board-toolbar').getBoundingClientRect();
+            panel.style.top  = (rect.bottom - toolbarRect.top + 4) + 'px';
+            panel.style.left = Math.max(0, rect.left - toolbarRect.left) + 'px';
+            panel.style.display = 'block';
+            _renderPanelContent(name);
+            _updateBadges();
+            // Mark button active
+            document.querySelectorAll('.toolbar-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            // Close on outside click
+            setTimeout(() => {
+                document.addEventListener('click', _outsideTbClick, { once: true });
+            }, 0);
+        }
+
+        function _outsideTbClick(e) {
+            const panel = document.getElementById('tbPanel');
+            if (panel && !panel.contains(e.target) &&
+                !e.target.closest('.toolbar-btn')) {
+                _closeTbPanel();
+            } else if (_activeTbPanel) {
+                // Re-attach if click was inside panel
+                setTimeout(() => {
+                    document.addEventListener('click', _outsideTbClick, { once: true });
+                }, 0);
+            }
+        }
+
+        function _closeTbPanel() {
+            const panel = document.getElementById('tbPanel');
+            if (panel) panel.style.display = 'none';
+            _activeTbPanel = null;
+            document.querySelectorAll('.toolbar-btn').forEach(b => b.classList.remove('active'));
+        }
+
+        /* Render panel content based on which panel is open */
+        function _renderPanelContent(name) {
+            const panel = document.getElementById('tbPanel');
+            if (!panel) return;
+            switch (name) {
+                case 'search': _renderSearchPanel(panel); break;
+                case 'filter': _renderFilterPanel(panel); break;
+                case 'sort':   _renderSortPanel(panel);   break;
+                case 'hide':   _renderHidePanel(panel);   break;
+            }
+        }
+
+        /* ── Search panel ─────────────────────────────────────────────── */
+        function _renderSearchPanel(panel) {
+            panel.innerHTML = `
+                <div class="tb-panel-title">Search Candidates</div>
+                <div class="tb-search-wrap">
+                    <input id="tbSearchInput" type="text" placeholder="Search by name, status…"
+                        value="${_searchQuery.replace(/"/g,'&quot;')}" oninput="_applySearch(this.value)" />
+                    <button class="tb-search-clear" title="Clear" onclick="_applySearch('')">✕</button>
+                </div>`;
+            panel.querySelector('#tbSearchInput').focus();
+        }
+
+        function _applySearch(q) {
+            _searchQuery = q.trim().toLowerCase();
+            const inp = document.getElementById('tbSearchInput');
+            if (inp && inp.value !== q) inp.value = q;
+            _updateBadges();
+            renderAll();
+        }
+
+        /* ── Filter panel ─────────────────────────────────────────────── */
+        function _renderFilterPanel(panel) {
+            // Collect all distinct status values across all positions
+            const statuses = new Set();
+            positions.forEach(pos => {
+                pos.candidates.forEach(c => {
+                    const statusCol = pos.columns.find(col => col.type === 'status');
+                    if (statusCol) {
+                        const v = (c.data[statusCol.name] || '').trim();
+                        if (v) statuses.add(v);
+                    }
+                });
+            });
+            const sorted = [...statuses].sort();
+            const chips = sorted.length
+                ? sorted.map(s => {
+                    const sel = _filterStatuses.has(s) ? 'selected' : '';
+                    return `<div class="tb-chip ${sel}" onclick="_toggleStatusFilter('${s.replace(/'/g,"\\'")}', this)">
+                        <span class="tb-chip-check"></span>${s}
+                    </div>`;
+                }).join('')
+                : '<div style="color:var(--text-2);font-size:13px;">No statuses found</div>';
+            panel.innerHTML = `
+                <div class="tb-panel-title">Filter by Status</div>
+                <div class="tb-chip-list">${chips}</div>
+                <div class="tb-panel-footer">
+                    <button class="tb-btn-clear" onclick="_clearFilters()">Clear</button>
+                    <button class="tb-btn-apply" onclick="_closeTbPanel()">Done</button>
+                </div>`;
+        }
+
+        function _toggleStatusFilter(status, el) {
+            if (_filterStatuses.has(status)) {
+                _filterStatuses.delete(status);
+                el.classList.remove('selected');
+            } else {
+                _filterStatuses.add(status);
+                el.classList.add('selected');
+            }
+            _updateBadges();
+            renderAll();
+        }
+
+        function _clearFilters() {
+            _filterStatuses.clear();
+            _updateBadges();
+            renderAll();
+            _closeTbPanel();
+        }
+
+        /* ── Sort panel ───────────────────────────────────────────────── */
+        function _renderSortPanel(panel) {
+            // Gather sortable columns from the first position (or all)
+            const colSet = new Map();
+            positions.forEach(pos => {
+                pos.columns.filter(c => c.visible !== false).forEach(c => {
+                    if (!colSet.has(c.name)) colSet.set(c.name, c.type);
+                });
+            });
+            const options = [...colSet.keys()].map(name =>
+                `<option value="${name}" ${_sortConfig.colName===name?'selected':''}>${name}</option>`
+            ).join('');
+            panel.innerHTML = `
+                <div class="tb-panel-title">Sort By</div>
+                <div class="tb-sort-row">
+                    <label>Column</label>
+                    <select id="tbSortCol">
+                        <option value="">-- None --</option>${options}
+                    </select>
+                </div>
+                <div class="tb-sort-row">
+                    <label>Order</label>
+                    <select id="tbSortDir">
+                        <option value="asc" ${_sortConfig.dir==='asc'?'selected':''}>A → Z</option>
+                        <option value="desc" ${_sortConfig.dir==='desc'?'selected':''}>Z → A</option>
+                    </select>
+                </div>
+                <div class="tb-panel-footer">
+                    <button class="tb-btn-clear" onclick="_clearSort()">Clear</button>
+                    <button class="tb-btn-apply" onclick="_applySort()">Apply</button>
+                </div>`;
+        }
+
+        function _applySort() {
+            const col = document.getElementById('tbSortCol');
+            const dir = document.getElementById('tbSortDir');
+            _sortConfig = { colName: col ? col.value : '', dir: dir ? dir.value : 'asc' };
+            _updateBadges();
+            renderAll();
+            _closeTbPanel();
+        }
+
+        function _clearSort() {
+            _sortConfig = { colName: '', dir: 'asc' };
+            _updateBadges();
+            renderAll();
+            _closeTbPanel();
+        }
+
+        /* ── Hide panel ───────────────────────────────────────────────── */
+        function _renderHidePanel(panel) {
+            // Collect non-fixed columns across all positions
+            const colMap = new Map(); // name → {visible, fixed}
+            positions.forEach(pos => {
+                pos.columns.forEach(c => {
+                    if (!colMap.has(c.name)) colMap.set(c.name, { visible: c.visible !== false, fixed: !!c.fixed });
+                });
+            });
+            const rows = [...colMap.entries()].map(([name, info]) => {
+                const on = info.visible ? 'on' : '';
+                const dis = info.fixed ? 'disabled title="Required column"' : '';
+                return `<div class="tb-toggle-row">
+                    <span class="tb-toggle-name">${name}</span>
+                    <button class="tb-toggle ${on}" ${dis} onclick="_toggleColumn('${name.replace(/'/g,"\\'")}', this)"></button>
+                </div>`;
+            }).join('');
+            panel.innerHTML = `
+                <div class="tb-panel-title">Show / Hide Columns</div>
+                <div style="max-height:240px;overflow-y:auto;">${rows || '<div style="color:var(--text-2);font-size:13px;">No columns</div>'}</div>`;
+        }
+
+        function _toggleColumn(name, btn) {
+            const nowOn = btn.classList.toggle('on');
+            positions.forEach(pos => {
+                const col = pos.columns.find(c => c.name === name);
+                if (col) col.visible = nowOn;
+            });
+            _updateBadges();
+            renderAll();
+        }
+
+        /* ── Filtered / sorted candidate list ────────────────────────── */
+        function _getFilteredCandidates(position) {
+            let list = [...position.candidates];
+            // 1. Search
+            if (_searchQuery) {
+                const q = _searchQuery;
+                list = list.filter(c => {
+                    return Object.values(c.data).some(v =>
+                        String(v || '').toLowerCase().includes(q)
+                    );
+                });
+            }
+            // 2. Filter by status
+            if (_filterStatuses.size > 0) {
+                const statusCol = position.columns.find(c => c.type === 'status');
+                list = list.filter(c => {
+                    const val = statusCol ? (c.data[statusCol.name] || '').trim() : '';
+                    return _filterStatuses.has(val);
+                });
+            }
+            // 3. Sort
+            if (_sortConfig.colName) {
+                const key = _sortConfig.colName;
+                const dir = _sortConfig.dir === 'desc' ? -1 : 1;
+                list.sort((a, b) => {
+                    const av = String(a.data[key] || '').toLowerCase();
+                    const bv = String(b.data[key] || '').toLowerCase();
+                    return av < bv ? -dir : av > bv ? dir : 0;
+                });
+            }
+            return list;
+        }
+
+        /* ── Update badge counts on toolbar buttons ───────────────────── */
+        function _updateBadges() {
+            // Search badge
+            const sbtn = document.getElementById('tbBtn-search');
+            if (sbtn) {
+                const old = sbtn.querySelector('.toolbar-badge');
+                if (old) old.remove();
+                if (_searchQuery) {
+                    const b = document.createElement('span');
+                    b.className = 'toolbar-badge'; b.textContent = '1';
+                    sbtn.appendChild(b);
+                }
+            }
+            // Filter badge
+            const fbtn = document.getElementById('tbBtn-filter');
+            if (fbtn) {
+                const old = fbtn.querySelector('.toolbar-badge');
+                if (old) old.remove();
+                if (_filterStatuses.size > 0) {
+                    const b = document.createElement('span');
+                    b.className = 'toolbar-badge'; b.textContent = String(_filterStatuses.size);
+                    fbtn.appendChild(b);
+                }
+            }
+            // Sort badge
+            const sortbtn = document.getElementById('tbBtn-sort');
+            if (sortbtn) {
+                const old = sortbtn.querySelector('.toolbar-badge');
+                if (old) old.remove();
+                if (_sortConfig.colName) {
+                    const b = document.createElement('span');
+                    b.className = 'toolbar-badge'; b.textContent = '1';
+                    sortbtn.appendChild(b);
+                }
+            }
+            // Hide badge
+            const hbtn = document.getElementById('tbBtn-hide');
+            if (hbtn) {
+                const old = hbtn.querySelector('.toolbar-badge');
+                if (old) old.remove();
+                let hidden = 0;
+                positions.forEach(pos => pos.columns.forEach(c => { if (c.visible === false) hidden++; }));
+                if (hidden > 0) {
+                    const b = document.createElement('span');
+                    b.className = 'toolbar-badge'; b.textContent = String(hidden);
+                    hbtn.appendChild(b);
+                }
+            }
+        }
+
         function renderAll() {
             const container = document.getElementById('positionsContainer');
             container.innerHTML = '';
@@ -3498,8 +3889,20 @@
 
             tbody.innerHTML = '';
 
-            // Render existing candidates
-            position.candidates.forEach(candidate => {
+            // Render existing candidates (filtered/sorted)
+            const _displayCandidates = _getFilteredCandidates(position);
+            const _isFiltered = _searchQuery || _filterStatuses.size > 0;
+            if (_displayCandidates.length === 0 && position.candidates.length > 0 && _isFiltered) {
+                const emptyTr = document.createElement('tr');
+                const visColCount = position.columns.filter(c => c.visible !== false).length;
+                const emptyTd = document.createElement('td');
+                emptyTd.colSpan = visColCount + 2;
+                emptyTd.style.cssText = 'padding:18px 16px;color:var(--text-2);font-size:13px;text-align:center;';
+                emptyTd.textContent = 'No candidates match the current search / filter.';
+                emptyTr.appendChild(emptyTd);
+                tbody.appendChild(emptyTr);
+            }
+            _displayCandidates.forEach(candidate => {
                 const tr = document.createElement('tr');
 
                 position.columns.filter(col => col.visible !== false).forEach(col => {
