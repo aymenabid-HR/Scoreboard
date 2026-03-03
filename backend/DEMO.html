@@ -3471,26 +3471,36 @@
                     // Make cells editable (email/phone are hidden, file type has its own handlers)
                     if (col.type !== 'file' && col.type !== 'email' && col.type !== 'phone') {
                         td.style.cursor = 'pointer';
-                        td.onclick = (e) => {
-                            // If this cell has a collapsed text-clamp wrapper, expand it first
+
+                        // Per-cell timer used to let dblclick cancel a pending single-click edit
+                        let _ctTimer = null;
+
+                        td.onclick = () => {
                             const wrap = td.querySelector('.cell-text-wrap');
-                            if (wrap && !wrap.classList.contains('expanded')) {
-                                e.stopPropagation();
-                                // Collapse any other expanded cells
-                                document.querySelectorAll('.cell-text-wrap.expanded').forEach(w => {
-                                    w.classList.remove('expanded');
-                                    w.setAttribute('aria-expanded', 'false');
-                                    const lbl = w.querySelector('.ctw-label');
-                                    if (lbl) lbl.textContent = 'Show more';
-                                });
-                                wrap.classList.add('expanded');
-                                wrap.setAttribute('aria-expanded', 'true');
-                                const lbl = wrap.querySelector('.ctw-label');
-                                if (lbl) lbl.textContent = 'Show less';
+                            if (!wrap) {
+                                // Short text (no clamp wrapper): edit on single click as before
+                                makeEditable(position.id, candidate.id, col.name, col.type, td, value);
                                 return;
                             }
-                            // Already expanded or no wrap: open editor
-                            makeEditable(position.id, candidate.id, col.name, col.type, td, value);
+                            if (!wrap.classList.contains('expanded')) {
+                                // Collapsed: single click does nothing — wait for double-click
+                                return;
+                            }
+                            // Expanded: delay the edit so a double-click can collapse instead
+                            if (_ctTimer) return;
+                            _ctTimer = setTimeout(() => {
+                                _ctTimer = null;
+                                const w = td.querySelector('.cell-text-wrap');
+                                if (w && w.classList.contains('expanded')) {
+                                    makeEditable(position.id, candidate.id, col.name, col.type, td, value);
+                                }
+                            }, 220);
+                        };
+
+                        td.ondblclick = (e) => {
+                            clearTimeout(_ctTimer); _ctTimer = null;
+                            const wrap = td.querySelector('.cell-text-wrap');
+                            if (wrap) { e.stopPropagation(); _toggleTextWrap(wrap); }
                         };
                     }
 
@@ -3567,7 +3577,7 @@
                     }
                     if (value && value.length > 80) {
                         const _safe = value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-                        return `<div class="cell-text-wrap" tabindex="0" role="button" aria-expanded="false" title="Click to expand · Click again to edit">
+                        return `<div class="cell-text-wrap" tabindex="0" role="button" aria-expanded="false" title="Double-click to expand · Click expanded text to edit">
                             <div class="cell-text-inner">${_safe}</div>
                             <div class="cell-expand-hint" aria-hidden="true">
                                 <svg viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -4743,6 +4753,23 @@
 
         // ── Global handlers: close on outside click / Escape key ────────────────
 
+        // Toggle a single .cell-text-wrap between expanded and collapsed
+        function _toggleTextWrap(wrap) {
+            const expanding = !wrap.classList.contains('expanded');
+            // Collapse every other open cell first
+            document.querySelectorAll('.cell-text-wrap.expanded').forEach(w => {
+                if (w === wrap) return;
+                w.classList.remove('expanded');
+                w.setAttribute('aria-expanded', 'false');
+                const l = w.querySelector('.ctw-label');
+                if (l) l.textContent = 'Show more';
+            });
+            wrap.classList.toggle('expanded', expanding);
+            wrap.setAttribute('aria-expanded', String(expanding));
+            const lbl = wrap.querySelector('.ctw-label');
+            if (lbl) lbl.textContent = expanding ? 'Show less' : 'Show more';
+        }
+
         function _collapseAllTextCells() {
             document.querySelectorAll('.cell-text-wrap.expanded').forEach(w => {
                 w.classList.remove('expanded');
@@ -4775,7 +4802,7 @@
             }
             if ((e.key === 'Enter' || e.key === ' ') && document.activeElement?.classList.contains('cell-text-wrap')) {
                 e.preventDefault();
-                document.activeElement.click();
+                _toggleTextWrap(document.activeElement);
                 return;
             }
 
