@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recruitment Scoreboard - Multi-Position Demo</title>
+    <title>Taleemabad Scoreboard - Multi-Position Demo</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -2273,7 +2273,7 @@
                 <div style="display:flex;align-items:center;gap:8px;">
                     <span style="font-size:13px;color:var(--text-3,#c5c7d0);">Workspaces</span>
                     <span style="font-size:13px;color:var(--text-3,#c5c7d0);">›</span>
-                    <h1 id="currentWorkspaceName" style="font-size:15px;font-weight:700;color:#323338;">👥 Recruitment Scoreboard</h1>
+                    <h1 id="currentWorkspaceName" style="font-size:15px;font-weight:700;color:#323338;">👥 Taleemabad Scoreboard</h1>
                 </div>
                 <div class="header-right">
                     <div class="user-chip" id="userChip" style="display:none;">
@@ -2665,7 +2665,7 @@
     <div class="auth-overlay" id="loginModal">
         <div class="auth-box">
             <div class="auth-logo">📋</div>
-            <div class="auth-title">Recruitment Scoreboard</div>
+            <div class="auth-title">Taleemabad Scoreboard</div>
             <div class="auth-subtitle" id="authSubtitle">Sign in to access your workspace</div>
 
             <!-- Shown when user opens an invite link -->
@@ -2934,7 +2934,7 @@
                 // If pendingBoardId is set, the user may be about to join someone else's workspace.
                 if (apiWorkspaces.length === 0 && !pendingBoardId) {
                     const created = await apiCall('POST', '/workspaces', {
-                        name: 'Recruitment Scoreboard', description: 'Main board', icon: '👥', color: '#6366F1'
+                        name: 'Taleemabad Scoreboard', description: 'Main board', icon: '👥', color: '#6366F1'
                     });
                     if (created) apiWorkspaces.push(created);
                 }
@@ -2972,7 +2972,7 @@
                             // If user has no workspaces at all, create a default one now
                             if (workspaces.length === 0) {
                                 const created = await apiCall('POST', '/workspaces', {
-                                    name: 'Recruitment Scoreboard', description: 'Main board', icon: '👥', color: '#6366F1'
+                                    name: 'Taleemabad Scoreboard', description: 'Main board', icon: '👥', color: '#6366F1'
                                 });
                                 if (created) workspaces = mapWs([created]);
                             }
@@ -3324,7 +3324,7 @@
             const candidateName = candidate.data['Name'] || 'the candidate';
             const positionName  = position.name || 'this position';
             document.getElementById('reminderEmailBody').value =
-                `Hey,\n\nIt's time to provide feedback for ${candidateName} (${positionName}).\n\nPlease log in to the Recruitment Scoreboard and share your evaluation at your earliest convenience.\n\nThank you!`;
+                `Hey,\n\nIt's time to provide feedback for ${candidateName} (${positionName}).\n\nPlease log in to the Taleemabad Scoreboard and share your evaluation at your earliest convenience.\n\nThank you!`;
 
             // Clear previous email / error
             document.getElementById('reminderEmailInput').value = '';
@@ -3863,11 +3863,6 @@
                         <div class="column-header">
                             <span class="column-name-text" ondblclick="editColumnNameInline('${position.id}', '${col.id}', event)" style="cursor: pointer;" title="Double-click to edit">${col.name}</span>
                             <span class="column-menu-icon" onclick="toggleColumnMenu('${position.id}', '${col.id}', event)">⋮</span>
-                            <div class="column-dropdown" id="dropdown-${position.id}-${col.id}">
-                                <div class="dropdown-item" onclick="(function(e){e.stopPropagation(); closeAllColumnMenus(); setTimeout(() => editColumnName('${position.id}', '${col.id}', {stopPropagation:()=>{},preventDefault:()=>{}}), 10);})(event)">✏️ Edit name</div>
-                                <div class="dropdown-item" onclick="(function(e){e.stopPropagation(); closeAllColumnMenus(); setTimeout(() => duplicateColumn('${position.id}', '${col.id}', {stopPropagation:()=>{},preventDefault:()=>{}}), 10);})(event)">📋 Duplicate column</div>
-                                <div class="dropdown-item danger" onclick="(function(e){e.stopPropagation(); closeAllColumnMenus(); setTimeout(() => removeColumn('${position.id}', '${col.id}', {stopPropagation:()=>{},preventDefault:()=>{}}), 10);})(event)">🗑️ Delete column</div>
-                            </div>
                         </div>
                     `;
                 }
@@ -4476,16 +4471,41 @@
 
         function toggleColumnMenu(positionId, columnId, event) {
             event.stopPropagation();
-            const dropdown = document.getElementById(`dropdown-${positionId}-${columnId}`);
-            if (!dropdown) return;
+            const menu = document.getElementById('colDropdown');
+            // If already open for the same column, close it
+            if (menu.dataset.pid === positionId && menu.dataset.cid === columnId &&
+                menu.style.display !== 'none') {
+                closeAllColumnMenus(); return;
+            }
+            menu.dataset.pid = positionId;
+            menu.dataset.cid = columnId;
+            menu.innerHTML = `
+                <div class="dropdown-item" onclick="closeAllColumnMenus();editColumnName('${positionId}','${columnId}',{stopPropagation:()=>{},preventDefault:()=>{}})">✏️ Edit name</div>
+                <div class="dropdown-item" onclick="closeAllColumnMenus();duplicateColumn('${positionId}','${columnId}',{stopPropagation:()=>{},preventDefault:()=>{}})">📋 Duplicate column</div>
+                <div class="dropdown-item danger" onclick="closeAllColumnMenus();removeColumn('${positionId}','${columnId}',{stopPropagation:()=>{},preventDefault:()=>{}})">🗑️ Delete column</div>
+            `;
+            // Position using fixed coords — bypasses any overflow:hidden ancestor
+            const rect = event.target.getBoundingClientRect();
+            const menuW = 190;
+            let left = rect.left;
+            if (left + menuW > window.innerWidth - 8) left = window.innerWidth - menuW - 8;
+            menu.style.top  = (rect.bottom + 2) + 'px';
+            menu.style.left = left + 'px';
+            menu.style.display = 'block';
+            setTimeout(() => document.addEventListener('click', _closeColMenuOutside, { once: true }), 0);
+        }
 
-            closeAllColumnMenus();
-            dropdown.classList.toggle('active');
+        function _closeColMenuOutside(e) {
+            const menu = document.getElementById('colDropdown');
+            if (menu && !menu.contains(e.target)) { closeAllColumnMenus(); }
+            else if (menu && menu.style.display !== 'none') {
+                setTimeout(() => document.addEventListener('click', _closeColMenuOutside, { once: true }), 0);
+            }
         }
 
         function closeAllColumnMenus() {
-            const allDropdowns = document.querySelectorAll('.column-dropdown');
-            allDropdowns.forEach(d => d.classList.remove('active'));
+            const menu = document.getElementById('colDropdown');
+            if (menu) { menu.style.display = 'none'; menu.dataset.pid = ''; menu.dataset.cid = ''; }
         }
 
         function handleDropdownAction(event, action, positionId, columnId) {
@@ -5990,5 +6010,7 @@
     </script>
     <!-- Toolbar floating panel — at body level so fixed positioning is never clipped -->
     <div id="tbPanel" style="display:none;"></div>
+    <!-- Column action dropdown — at body level so overflow:hidden on table never clips it -->
+    <div id="colDropdown" style="display:none;position:fixed;z-index:9999;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(99,102,241,0.16);min-width:190px;padding:4px 0;animation:popUp 0.12s ease;"></div>
 </body>
 </html>
