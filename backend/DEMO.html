@@ -2687,7 +2687,50 @@
                     <input type="password" id="loginPassword" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin()">
                 </div>
                 <div class="auth-error" id="loginError"></div>
+                <div id="forgotPasswordLink" style="display:none; text-align:center; margin-top:8px;">
+                    <a href="#" onclick="showForgotPasswordStep(); return false;" style="font-size:13px; color:#6366F1; text-decoration:none;">Forgot your password?</a>
+                </div>
                 <button class="auth-btn" onclick="doLogin()">Sign In</button>
+            </div>
+
+            <!-- Forgot Password -->
+            <div id="forgotPasswordView" style="display:none;">
+                <!-- Step 1: Enter email -->
+                <div id="forgotStep1">
+                    <div style="margin-bottom:16px;">
+                        <div style="font-size:17px; font-weight:700; color:#1e1e2e; margin-bottom:4px;">Reset your password</div>
+                        <div style="font-size:13px; color:#6b7280;">Enter your account email and we'll generate a reset code.</div>
+                    </div>
+                    <div class="auth-field">
+                        <label>Email</label>
+                        <input type="email" id="forgotEmail" placeholder="you@example.com" onkeydown="if(event.key==='Enter')_submitForgotPassword()">
+                    </div>
+                    <div class="auth-error" id="forgotError"></div>
+                    <button class="auth-btn" onclick="_submitForgotPassword()">Generate reset code</button>
+                    <div style="text-align:center; margin-top:12px;">
+                        <a href="#" onclick="hideForgotPasswordStep(); return false;" style="font-size:13px; color:#6366F1; text-decoration:none;">← Back to login</a>
+                    </div>
+                </div>
+                <!-- Step 2: Enter code + new password -->
+                <div id="forgotStep2" style="display:none;">
+                    <div style="margin-bottom:16px;">
+                        <div style="font-size:17px; font-weight:700; color:#1e1e2e; margin-bottom:4px;">Enter reset code</div>
+                    </div>
+                    <div style="background:#f0f0ff; border:1.5px solid #a5b4fc; border-radius:10px; padding:14px 18px; margin-bottom:18px; text-align:center;">
+                        <div style="font-size:12px; color:#6366F1; font-weight:600; margin-bottom:6px; letter-spacing:0.05em; text-transform:uppercase;">Your reset code</div>
+                        <div id="resetCodeDisplay" style="font-family:monospace; font-size:28px; font-weight:800; color:#4338ca; letter-spacing:0.18em;"></div>
+                    </div>
+                    <div class="auth-field">
+                        <label>New password</label>
+                        <input type="password" id="resetNewPassword" placeholder="Min 8 chars, 1 uppercase, 1 number" onkeydown="if(event.key==='Enter')_submitResetPassword()">
+                    </div>
+                    <div class="auth-field">
+                        <label>Confirm password</label>
+                        <input type="password" id="resetConfirmPassword" placeholder="Repeat new password" onkeydown="if(event.key==='Enter')_submitResetPassword()">
+                    </div>
+                    <div class="auth-error" id="resetError"></div>
+                    <button class="auth-btn" onclick="_submitResetPassword()">Reset password</button>
+                </div>
             </div>
 
             <!-- Register -->
@@ -2867,7 +2910,12 @@
                 }
                 await loadFromAPI();
                 showNotification(`✅ Welcome back, ${data.user.name}!`);
-            } catch (err) { errEl.textContent = err.message; }
+            } catch (err) {
+                errEl.textContent = err.message;
+                // Show "Forgot your password?" link on auth failure
+                const forgotLink = document.getElementById('forgotPasswordLink');
+                if (forgotLink) forgotLink.style.display = 'block';
+            }
         }
 
         async function doRegister() {
@@ -2893,6 +2941,96 @@
                 await loadFromAPI();
                 showNotification(`✅ Account created! Welcome, ${data.user.name}!`);
             } catch (err) { errEl.textContent = err.message; }
+        }
+
+        // ---- Forgot / Reset Password ----
+        let _forgotEmail = '';
+        let _resetCode   = '';
+
+        function showForgotPasswordStep() {
+            document.getElementById('loginTab').style.display         = 'none';
+            document.getElementById('registerTab').style.display      = 'none';
+            document.getElementById('forgotPasswordView').style.display = 'block';
+            document.getElementById('forgotStep1').style.display      = 'block';
+            document.getElementById('forgotStep2').style.display      = 'none';
+            document.getElementById('forgotError').textContent        = '';
+            document.getElementById('forgotEmail').value              = document.getElementById('loginEmail').value || '';
+            // Hide tabs while in forgot flow
+            document.querySelector('.auth-tabs').style.display        = 'none';
+        }
+
+        function hideForgotPasswordStep() {
+            document.getElementById('forgotPasswordView').style.display = 'none';
+            document.getElementById('loginTab').style.display           = 'block';
+            document.querySelector('.auth-tabs').style.display          = '';
+            switchAuthTab('login');
+        }
+
+        async function _submitForgotPassword() {
+            const email  = document.getElementById('forgotEmail').value.trim();
+            const errEl  = document.getElementById('forgotError');
+            errEl.textContent = '';
+            if (!email) { errEl.textContent = 'Please enter your email address'; return; }
+            try {
+                const resp = await fetch(`${API_BASE}/auth/forgot-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email }),
+                });
+                const data = await resp.json();
+                if (!resp.ok) { errEl.textContent = data.error || 'Failed to generate reset code'; return; }
+                if (!data.code) {
+                    errEl.textContent = 'No account found with that email address.';
+                    return;
+                }
+                _forgotEmail = email;
+                _resetCode   = data.code;
+                document.getElementById('resetCodeDisplay').textContent = data.code;
+                document.getElementById('forgotStep1').style.display    = 'none';
+                document.getElementById('forgotStep2').style.display    = 'block';
+                document.getElementById('resetError').textContent       = '';
+                document.getElementById('resetNewPassword').value       = '';
+                document.getElementById('resetConfirmPassword').value   = '';
+            } catch (err) {
+                errEl.textContent = 'Network error. Please try again.';
+            }
+        }
+
+        async function _submitResetPassword() {
+            const newPw      = document.getElementById('resetNewPassword').value;
+            const confirmPw  = document.getElementById('resetConfirmPassword').value;
+            const errEl      = document.getElementById('resetError');
+            errEl.textContent = '';
+            if (!newPw || !confirmPw) { errEl.textContent = 'Please fill in both password fields'; return; }
+            if (newPw !== confirmPw)  { errEl.textContent = 'Passwords do not match'; return; }
+            if (newPw.length < 8)     { errEl.textContent = 'Password must be at least 8 characters'; return; }
+            if (!/[A-Z]/.test(newPw)) { errEl.textContent = 'Password must contain at least one uppercase letter'; return; }
+            if (!/[0-9]/.test(newPw)) { errEl.textContent = 'Password must contain at least one number'; return; }
+            try {
+                const resp = await fetch(`${API_BASE}/auth/reset-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: _forgotEmail, token: _resetCode, password: newPw }),
+                });
+                const data = await resp.json();
+                if (!resp.ok) { errEl.textContent = data.error || 'Failed to reset password'; return; }
+                // Success — go back to login with a success message
+                hideForgotPasswordStep();
+                const loginErr = document.getElementById('loginError');
+                loginErr.style.color    = '#16a34a';
+                loginErr.style.background = '#f0fdf4';
+                loginErr.style.border   = '1px solid #86efac';
+                loginErr.style.padding  = '8px 12px';
+                loginErr.style.borderRadius = '6px';
+                loginErr.textContent    = 'Password reset! Please sign in.';
+                document.getElementById('forgotPasswordLink').style.display = 'none';
+                // Pre-fill email
+                document.getElementById('loginEmail').value = _forgotEmail;
+                _forgotEmail = '';
+                _resetCode   = '';
+            } catch (err) {
+                errEl.textContent = 'Network error. Please try again.';
+            }
         }
 
         async function logout() {

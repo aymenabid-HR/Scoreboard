@@ -152,4 +152,73 @@ router.get('/me', requireAuth, async (req: Request, res: Response) => {
   res.json(user);
 });
 
+// POST /api/auth/forgot-password
+router.post('/forgot-password', validate(forgotPasswordSchema), async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    // Always return 200 to prevent email enumeration
+    if (!user) {
+      res.json({ code: null, message: 'If that email exists, a reset code was generated.' });
+      return;
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const codeHash = await bcrypt.hash(code, 10);
+    const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { resetToken: codeHash, resetTokenExpiry: expiry },
+    });
+
+    // Return plain code directly (internal tool — no email service)
+    res.json({ code });
+  } catch (err) {
+    console.error('[forgot-password error]', err);
+    res.status(500).json({ error: 'Failed to generate reset code' });
+  }
+});
+
+// POST /api/auth/reset-password
+router.post('/reset-password', validate(resetPasswordSchema), async (req: Request, res: Response) => {
+  try {
+    const { token, email, password } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      res.status(400).json({ error: 'Invalid reset request' });
+      return;
+    }
+
+    if (!user.resetToken || !user.resetTokenExpiry) {
+      res.status(400).json({ error: 'No reset request found' });
+      return;
+    }
+
+    if (user.resetTokenExpiry < new Date()) {
+      res.status(400).json({ error: 'Reset code has expired' });
+      return;
+    }
+
+    const match = await bcrypt.compare(token, user.resetToken);
+    if (!match) {
+      res.status(400).json({ error: 'Invalid reset code' });
+      return;
+    }
+
+    const newHash = await bcrypt.hash(password, 12);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: newHash, resetToken: null, resetTokenExpiry: null },
+    });
+
+    res.json({ message: 'Password reset successfully' });
+  } catch (err) {
+    console.error('[reset-password error]', err);
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
 export default router;

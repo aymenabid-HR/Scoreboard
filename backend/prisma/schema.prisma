@@ -17,8 +17,10 @@ model User {
   email        String   @unique
   passwordHash String   @map("password_hash")
   avatarUrl    String?  @map("avatar_url")
-  isVerified   Boolean  @default(false) @map("is_verified")
-  createdAt    DateTime @default(now()) @map("created_at")
+  isVerified       Boolean   @default(false) @map("is_verified")
+  resetToken       String?   @map("reset_token")
+  resetTokenExpiry DateTime? @map("reset_token_expiry")
+  createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   refreshTokens         RefreshToken[]
